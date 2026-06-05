@@ -1,0 +1,311 @@
+<#ftl output_format="HTML">
+<#assign resourceItem = (metrics.resourceItems[execution.resourceType][execution.resourceId])!>
+<#assign resourceName = resourceItem.name!(execution.resourceName!execution.resourceId)>
+<#if resource_type?? && resource_id??>
+ <#assign backUrl = "jsp/site/Portal.jsp?page=agent_observability&view=resourceObservability&resource_type=${resource_type}&resource_id=${resource_id}&client_id=${client.id}" />
+<#else>
+ <#assign backUrl = "jsp/site/Portal.jsp?page=platform&view=clientObservability&id=${client.id}" />
+</#if>
+
+<#-- Parsed input/output data from Java (Jackson) -->
+<#assign inputJson = execution.parsedInputData!{}>
+<#assign outputJson = execution.parsedOutputData!{}>
+
+<#-- Compute totals from nodes + collect END node outputs -->
+<#assign totalInputTokens = 0>
+<#assign totalOutputTokens = 0>
+<#assign nodeCount = 0>
+<#assign endNodeOutputs = []>
+<#if execution.nodeExecutions??>
+ <#assign nodeCount = execution.nodeExecutions?size>
+ <#list execution.nodeExecutions as node>
+ <#assign nodeOut = node.parsedOutputData!{}>
+ <#if (nodeOut.attributes)??>
+ <#if (nodeOut.attributes.inputTokens)??><#assign totalInputTokens = totalInputTokens + nodeOut.attributes.inputTokens></#if>
+ <#if (nodeOut.attributes.outputTokens)??><#assign totalOutputTokens = totalOutputTokens + nodeOut.attributes.outputTokens></#if>
+ <#if (node.nodeId!"")?contains("end")>
+ <#assign endNodeOutputs = endNodeOutputs + [{"nodeId": node.nodeId, "attrs": nodeOut.attributes}]>
+ </#if>
+ </#if>
+ </#list>
+</#if>
+
+<#-- Compute duration -->
+<#assign durationMs = 0>
+<#if execution.endTime?? && execution.startTime??>
+ <#assign durationMs = (execution.endTime?long - execution.startTime?long)>
+</#if>
+<#macro durationFormat ms>
+ <#if ms < 1000>${ms}ms<#elseif ms < 60000>${(ms/1000)?string("0.#")}s<#else>${(ms/60000)?int}m ${((ms%60000)/1000)?int}s</#if>
+</#macro>
+
+<#-- Status badge macro -->
+<#macro statusBadge status>
+ <#switch status.value>
+ <#case "COMPLETED"><span class="badge text-bg-success">#i18n{platform.observability.status.completed}</span><#break>
+ <#case "ERROR"><span class="badge text-bg-danger">#i18n{platform.observability.status.error}</span><#break>
+ <#case "PENDING"><span class="badge text-bg-warning">#i18n{platform.observability.status.pending}</span><#break>
+ <#case "RUNNING"><span class="badge text-bg-primary">#i18n{platform.observability.status.running}</span><#break>
+ <#case "CANCELLED"><span class="badge text-bg-secondary">#i18n{platform.observability.status.cancelled}</span><#break>
+ <#default><span class="badge text-bg-light">${status.value}</span>
+ </#switch>
+</#macro>
+
+<#if header_current_view??>
+ <#-- Layout with page header (AgentXPage) -->
+ <div class="px-3 mt-3">
+ <#if resource_type! == "BOT"><#include "../commons/page_header_bot.html">
+ <#elseif resource_type! == "PIPELINE"><#include "../commons/page_header_pipeline.html">
+ <#elseif resource_type! == "DATASET"><#include "../commons/page_header_dataset.html">
+ <#elseif resource_type! == "VISION"><#include "../commons/page_header_vision.html">
+ <#elseif resource_type! == "MODEL"><#include "../commons/page_header_model.html">
+ </#if>
+ <div>
+ <div>
+<#else>
+ <#-- Layout standalone (PlatformXPage) -->
+ <div class="px-3 mt-4">
+ <div>
+ <div>
+</#if>
+
+ <#-- Header -->
+ <div class="mb-4">
+ <#if !(header_current_view??)>
+ <a href="${backUrl}" class="text-secondary small d-inline-block mb-2 text-decoration-underline">
+ <i class="ti ti-arrow-left"></i>#i18n{platform.xpage.action.back}
+ </a>
+ </#if>
+ <div class="d-flex align-items-center">
+ <h2 class="fw-bold h4">${resourceName}</h2>
+ <span class="ms-auto"><@statusBadge status=execution.status /></span>
+ </div>
+ <p class="text-secondary small mt-1">
+ <i class="ti ti-git-merge"></i>
+ Pipeline
+ <span class="mx-1">&middot;</span>
+ <#if execution.startTime??>${execution.startTime?string("dd/MM/yyyy HH:mm:ss")}</#if>
+ <span class="mx-1">&middot;</span>
+ <code class="small">${execution.executionId}</code>
+ <#if inputJson.attributes?? && inputJson.attributes.userId?? && inputJson.attributes.userId?has_content>
+ <span class="mx-1">&middot;</span>
+ <i class="ti ti-user"></i> ${inputJson.attributes.userId}
+ </#if>
+ </p>
+ </div>
+
+ <#-- Metrics row -->
+ <div class="row g-3 mb-3">
+ <div class="col-6 col-lg-3 d-flex">
+ <div class="card flex-fill">
+ <div class="card-body text-center py-3">
+ <div class="text-secondary small mb-1"><i class="ti ti-clock"></i> #i18n{platform.observability.table.duration}</div>
+ <div class="fw-bold fs-5"><@durationFormat ms=durationMs /></div>
+ </div>
+ </div>
+ </div>
+ <div class="col-6 col-lg-3 d-flex">
+ <div class="card flex-fill">
+ <div class="card-body text-center py-3">
+ <div class="text-secondary small mb-1"><i class="ti ti-currency-euro"></i> #i18n{platform.observability.table.cost}</div>
+ <div class="fw-bold fs-5">${(execution.totalCost!0)?string["0.####"]} &euro;</div>
+ </div>
+ </div>
+ </div>
+ <div class="col-6 col-lg-3 d-flex">
+ <div class="card flex-fill">
+ <div class="card-body text-center py-3">
+ <div class="text-secondary small mb-1"><i class="ti ti-git-branch"></i> #i18n{platform.observability.metric.nodes}</div>
+ <div class="fw-bold fs-5">${nodeCount}</div>
+ </div>
+ </div>
+ </div>
+ <div class="col-6 col-lg-3 d-flex">
+ <div class="card flex-fill">
+ <div class="card-body text-center py-3">
+ <div class="text-secondary small mb-1"><i class="ti ti-package"></i> Tokens</div>
+ <div class="fw-bold fs-5"><#if (totalInputTokens + totalOutputTokens) gt 0>${(totalInputTokens + totalOutputTokens)?string.computer}<#else>-</#if></div>
+ </div>
+ </div>
+ </div>
+ </div>
+
+ <#-- Error alert -->
+ <#if execution.errorMessage?? && execution.errorMessage?has_content>
+ <div class="alert alert-danger mb-4">${execution.errorMessage}</div>
+ </#if>
+
+ <#-- Pipeline inputs -->
+ <#if inputJson.attributes??>
+ <div class="card mb-4">
+ <div class="card-body p-3">
+ <h5 class="fw-bold mb-3">#i18n{platform.observability.pipeline.inputVariables}</h5>
+ <#if inputJson.attributes.inputs?? && inputJson.attributes.inputs?has_content>
+ <div class="table-responsive">
+ <table class="table table-hover align-middle mb-0">
+ <thead>
+ <tr>
+ <th>#i18n{platform.observability.pipeline.column.variable}</th>
+ <th>#i18n{platform.observability.pipeline.column.value}</th>
+ </tr>
+ </thead>
+ <tbody>
+ <#list inputJson.attributes.inputs as input>
+ <#list input?keys as key>
+ <tr>
+ <td class="fw-semibold text-nowrap">${key}</td>
+ <td class="text-break font-monospace small" style="max-height:250px;overflow-y:auto;display:block;">
+ <#assign val = input[key]>
+ <#if val?is_string || val?is_number || val?is_boolean>
+ ${val!'-'}
+ <#elseif val?is_hash && val.fileKey??>
+ <a href="${fileService.getFileDownloadUrlFO(val.fileKey)?no_esc}" class="text-decoration-none">
+ <i class="ti ti-file-download me-1"></i>${val.fileName!"#i18n{platform.observability.pipeline.defaultFileName}"}
+ </a>
+ <#elseif val?is_sequence>
+ <#list val as item>
+ <#if item?is_hash && item.fileKey??>
+ <div<#if item?index gt 0> class="mt-1"</#if>>
+ <a href="${fileService.getFileDownloadUrlFO(item.fileKey)?no_esc}" class="text-decoration-none">
+ <i class="ti ti-file-download me-1"></i>${item.fileName!"#i18n{platform.observability.pipeline.defaultFileName}"}
+ </a>
+ </div>
+ <#else>
+ <div>${item?string!'-'}</div>
+ </#if>
+ </#list>
+ <#else>
+ -
+ </#if>
+ </td>
+ </tr>
+ </#list>
+ </#list>
+ </tbody>
+ </table>
+ </div>
+ </#if>
+ </div>
+ </div>
+ </#if>
+
+
+ <#-- Processing pipeline nodes -->
+ <#if execution.nodeExecutions?? && execution.nodeExecutions?has_content>
+ <div class="card mb-4">
+ <div class="card-header">
+ <h5 class="mb-0">#i18n{platform.observability.pipeline.nodeExecutions}</h5>
+ </div>
+ <div class="card-body p-0">
+ <div class="table-responsive">
+ <table class="table table-hover align-middle mb-0">
+ <thead>
+ <tr>
+ <th>#</th>
+ <th>#i18n{platform.observability.node.name}</th>
+ <th>#i18n{platform.observability.table.start}</th>
+ <th>#i18n{platform.observability.table.duration}</th>
+ <th>Tokens</th>
+ <th>#i18n{platform.observability.table.cost}</th>
+ <th>#i18n{platform.observability.table.status}</th>
+ <th></th>
+ </tr>
+ </thead>
+ <tbody>
+ <#list execution.nodeExecutions?sort_by("executionOrder") as node>
+ <#assign nodeOut = node.parsedOutputData!{}>
+ <#assign nodeInputTokens = 0>
+ <#assign nodeOutputTokens = 0>
+ <#if (nodeOut.attributes.inputTokens)??>
+ <#assign nodeInputTokens = nodeOut.attributes.inputTokens>
+ </#if>
+ <#if (nodeOut.attributes.outputTokens)??>
+ <#assign nodeOutputTokens = nodeOut.attributes.outputTokens>
+ </#if>
+ <#assign hasDetails = false>
+ <#if (nodeOut.attributes)??>
+ <#if (nodeOut.attributes.details)?has_content || (nodeOut.attributes.response)?has_content || ((nodeOut.attributes.result)?has_content && nodeOut.attributes.result != "Noeud exécuté avec succès" && nodeOut.attributes.result != "Nœud exécuté avec succès")>
+ <#assign hasDetails = true>
+ </#if>
+ </#if>
+ <tr>
+ <td><span class="badge bg-secondary text-white">${node.executionOrder}</span></td>
+ <td class="fw-semibold">${node.nodeName!node.nodeId}</td>
+ <td><#if node.startTime??>${node.startTime?string("HH:mm:ss")}<#else>-</#if></td>
+ <td>
+ <#if node.endTime?? && node.startTime??>
+ <@durationFormat ms=(node.endTime?long - node.startTime?long) />
+ <#else>-</#if>
+ </td>
+ <td>
+ <#if (nodeInputTokens > 0) || (nodeOutputTokens > 0)>
+ <span class="small"><i class="ti ti-arrow-down"></i>${nodeInputTokens?string.computer} <i class="ti ti-arrow-up"></i>${nodeOutputTokens?string.computer}</span>
+ <#else>-</#if>
+ </td>
+ <td><#if node.totalCost?? && node.totalCost != 0>${node.totalCost?string["0.######"]} &euro;<#else>-</#if></td>
+ <td><@statusBadge status=node.status /></td>
+ <td>
+ <#if hasDetails>
+ <button type="button" class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#nodeModal${node?index}">
+ <i class="ti ti-eye"></i>
+ </button>
+ </#if>
+ </td>
+ </tr>
+ <#if node.errorMessage?? && node.errorMessage?has_content>
+ <tr>
+ <td colspan="8">
+ <div class="alert alert-danger mb-0"><i class="ti ti-alert-circle me-2"></i>${node.errorMessage}</div>
+ </td>
+ </tr>
+ </#if>
+ </#list>
+ </tbody>
+ </table>
+ </div>
+ </div>
+ </div>
+
+ <#-- Detail modals -->
+ <#list execution.nodeExecutions?sort_by("executionOrder") as node>
+ <#assign nodeOut = node.parsedOutputData!{}>
+ <#assign hasDetails = false>
+ <#if (nodeOut.attributes)??>
+ <#if (nodeOut.attributes.details)?has_content || (nodeOut.attributes.response)?has_content || ((nodeOut.attributes.result)?has_content && nodeOut.attributes.result != "Noeud exécuté avec succès" && nodeOut.attributes.result != "Nœud exécuté avec succès")>
+ <#assign hasDetails = true>
+ </#if>
+ </#if>
+ <#if hasDetails>
+ <div class="modal fade" id="nodeModal${node?index}" tabindex="-1" aria-hidden="true">
+ <div class="modal-dialog modal-lg modal-dialog-scrollable">
+ <div class="modal-content">
+ <div class="modal-header">
+ <h5 class="modal-title">${node.nodeName!node.nodeId} <span class="badge bg-secondary text-white">#${node.executionOrder}</span></h5>
+ <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+ </div>
+ <div class="modal-body">
+ <div class="rounded-3 bg-body-secondary p-3">
+ <#if (nodeOut.attributes.response)?has_content>
+ <pre class="mb-0 small" style="white-space:pre-wrap">${nodeOut.attributes.response}</pre>
+ <#elseif (nodeOut.attributes.details)?has_content>
+ <#if nodeOut.attributes.details?is_hash || nodeOut.attributes.details?is_sequence>
+ <pre class="mb-0 small" style="white-space:pre-wrap">${nodeOut.attributes.details?api.toString()}</pre>
+ <#else>
+ <pre class="mb-0 small" style="white-space:pre-wrap">${nodeOut.attributes.details}</pre>
+ </#if>
+ <#elseif (nodeOut.attributes.result)?has_content>
+ <pre class="mb-0 small" style="white-space:pre-wrap">${nodeOut.attributes.result}</pre>
+ </#if>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+ </#if>
+ </#list>
+
+ </#if>
+
+ </div>
+ </div>
+</div>

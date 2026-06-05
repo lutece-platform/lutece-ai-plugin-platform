@@ -1,0 +1,238 @@
+<#ftl output_format="HTML">
+<#include "commons/page_header_vision.html">
+
+ <#-- Add extractor button -->
+ <#if vision.userCanModify!false>
+ <div class="d-flex justify-content-end mb-4">
+ <button type="button" class="btn btn-primary" onclick="new bootstrap.Modal(document.getElementById('addExtractorDialog')).show()">
+ <i class="ti ti-plus"></i>
+ #i18n{platform.agent.vision.button.addExtractor}
+ </button>
+ </div>
+ </#if>
+
+ <#-- Extractors list -->
+ <#if (vision.extractors!)?has_content>
+ <#list vision.extractors as extractor>
+ <div class="card mb-4">
+ <div class="card-header"><div class="d-flex justify-content-between align-items-center w-100">
+ <div>
+ <h5 class="card-title mb-0">${extractor.extractorName!}</h5>
+ <#if (extractor.extractorDescription!"")?has_content>
+ <span class="small text-secondary">${extractor.extractorDescription}</span>
+ </#if>
+ </div>
+ <div class="d-flex gap-1">
+ <#if vision.userCanModify!false>
+ <button type="button" class="btn btn-light" onclick="new bootstrap.Modal(document.getElementById('addFieldDialog-${extractor.id}')).show()" title="#i18n{platform.agent.vision.button.addField}">
+ <i class="ti ti-plus"></i>
+ </button>
+ <button type="button" class="btn btn-light" onclick="new bootstrap.Modal(document.getElementById('modifyExtractorDialog-${extractor.id}')).show()" title="#i18n{platform.agent.vision.button.modifyExtractor}">
+ <i class="ti ti-pencil"></i>
+ </button>
+ </#if>
+ <#if vision.userCanDelete!false>
+ <a href="jsp/site/Portal.jsp?page=agent_vision&action=confirmRemoveExtractor&extractor_id=${extractor.id}&vision_id=${vision.id}&client_id=${client_id!}" class="btn btn-light" title="#i18n{platform.agent.vision.button.removeExtractor}">
+ <i class="ti ti-trash"></i>
+ </a>
+ </#if>
+ </div>
+ </div>
+ </div>
+ <div class="card-body">
+ <#if (extractor.fields!)?has_content>
+ <div class="table-responsive">
+ <table class="table table-hover align-middle">
+ <thead>
+ <tr>
+ <th>#i18n{platform.agent.model.entity.extractorfield.attribute.fieldName}</th>
+ <th>#i18n{platform.agent.model.entity.extractorfield.attribute.fieldDescription}</th>
+ <th>#i18n{platform.agent.model.entity.extractorfield.attribute.fieldType}</th>
+ <th class="text-center">#i18n{portal.util.labelActions}</th>
+ </tr>
+ </thead>
+ <tbody>
+ <#list extractor.fields as field>
+ <tr>
+ <td class="fw-semibold">${field.fieldName!}</td>
+ <td class="text-secondary">${field.fieldDescription!"-"}</td>
+ <td><span class="badge text-bg-secondary">${field.fieldType.label!}</span></td>
+ <td class="text-center">
+ <#if vision.userCanModify!false>
+ <button type="button" class="btn btn-light" onclick="new bootstrap.Modal(document.getElementById('modifyFieldDialog-${field.id}')).show()">
+ <i class="ti ti-pencil"></i>
+ </button>
+ </#if>
+ <#if vision.userCanDelete!false>
+ <a href="jsp/site/Portal.jsp?page=agent_vision&action=confirmRemoveExtractorField&field_id=${field.id}&vision_id=${vision.id}&client_id=${client_id!}" class="btn btn-light">
+ <i class="ti ti-x"></i>
+ </a>
+ </#if>
+ </td>
+ </tr>
+ </#list>
+ </tbody>
+ </table>
+ </div>
+ <#else>
+ <div class="text-center py-4 text-secondary">
+ <p>#i18n{platform.agent.vision.extractors.noFields}</p>
+ </div>
+ </#if>
+ </div>
+ </div>
+
+ <#-- Add Field Dialog for this extractor -->
+ <div class="modal fade" id="addFieldDialog-${extractor.id}" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered modal-dialog-scrollable"><div class="modal-content">
+ <div class="modal-header">
+ <h1 class="modal-title fs-3">#i18n{platform.agent.vision.modal.addField.title} - ${extractor.extractorName!}</h1>
+ <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+ </div>
+ <div class="modal-body">
+ <form method="post" action="jsp/site/Portal.jsp" id="form_add_field_${extractor.id}" class="d-grid gap-3">
+ <input type="hidden" name="page" value="agent_vision">
+ <input type="hidden" name="action" value="doAddExtractorField">
+ <input type="hidden" name="vision_id" value="${vision.id}">
+ <input type="hidden" name="client_id" value="${client_id!}">
+ <input type="hidden" name="extractor_id" value="${extractor.id}">
+ <div class="d-grid gap-2">
+ <label class="form-label" for="field_name_${extractor.id}">#i18n{platform.agent.model.entity.extractorfield.attribute.fieldName} *</label>
+ <input type="text" id="field_name_${extractor.id}" name="field_name" class="form-control" required>
+ </div>
+ <div class="d-grid gap-2">
+ <label class="form-label" for="field_description_${extractor.id}">#i18n{platform.agent.model.entity.extractorfield.attribute.fieldDescription}</label>
+ <textarea id="field_description_${extractor.id}" name="field_description" class="form-control" rows="2"></textarea>
+ </div>
+ <div class="d-grid gap-2">
+ <label class="form-label" for="field_type_${extractor.id}">#i18n{platform.agent.model.entity.extractorfield.attribute.fieldType} *</label>
+ <select id="field_type_${extractor.id}" name="field_type" class="form-select" data-mu-toggle="select" required>
+ <#if field_types??>
+ <#list field_types as ft>
+ <option value="${ft.name()}">${ft.label!}</option>
+ </#list>
+ </#if>
+ </select>
+ </div>
+ </form>
+ </div>
+ <div class="modal-footer">
+ <button type="button" class="btn btn-light" data-bs-dismiss="modal">#i18n{portal.util.labelCancel}</button>
+ <button type="submit" form="form_add_field_${extractor.id}" class="btn btn-primary">
+ <i class="ti ti-plus me-1"></i>#i18n{portal.util.labelCreate}
+ </button>
+ </div>
+ </div></div></div>
+
+ <#-- Modify Extractor Dialog -->
+ <div class="modal fade" id="modifyExtractorDialog-${extractor.id}" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered modal-dialog-scrollable"><div class="modal-content">
+ <div class="modal-header">
+ <h1 class="modal-title fs-3">#i18n{platform.agent.vision.modal.modifyExtractor.title}</h1>
+ <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+ </div>
+ <div class="modal-body">
+ <form method="post" action="jsp/site/Portal.jsp" id="form_modify_extractor_${extractor.id}" class="d-grid gap-3">
+ <input type="hidden" name="page" value="agent_vision">
+ <input type="hidden" name="action" value="doModifyExtractor">
+ <input type="hidden" name="vision_id" value="${vision.id}">
+ <input type="hidden" name="client_id" value="${client_id!}">
+ <input type="hidden" name="extractor_id" value="${extractor.id}">
+ <div class="d-grid gap-2">
+ <label class="form-label" for="modify_extractor_name_${extractor.id}">#i18n{platform.agent.model.entity.extractor.attribute.extractorName} *</label>
+ <input type="text" id="modify_extractor_name_${extractor.id}" name="extractor_name" class="form-control" value="${extractor.extractorName!}" required>
+ </div>
+ <div class="d-grid gap-2">
+ <label class="form-label" for="modify_extractor_description_${extractor.id}">#i18n{platform.agent.model.entity.extractor.attribute.extractorDescription}</label>
+ <textarea id="modify_extractor_description_${extractor.id}" name="extractor_description" class="form-control" rows="3">${extractor.extractorDescription!}</textarea>
+ </div>
+ </form>
+ </div>
+ <div class="modal-footer">
+ <button type="button" class="btn btn-light" data-bs-dismiss="modal">#i18n{portal.util.labelCancel}</button>
+ <button type="submit" form="form_modify_extractor_${extractor.id}" class="btn btn-primary">#i18n{portal.util.labelModify}</button>
+ </div>
+ </div></div></div>
+
+ <#-- Modify Field Dialogs -->
+ <#if (extractor.fields!)?has_content>
+ <#list extractor.fields as field>
+ <div class="modal fade" id="modifyFieldDialog-${field.id}" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered modal-dialog-scrollable"><div class="modal-content">
+ <div class="modal-header">
+ <h1 class="modal-title fs-3">#i18n{platform.agent.vision.modal.modifyField.title} - ${field.fieldName!}</h1>
+ <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+ </div>
+ <div class="modal-body">
+ <form method="post" action="jsp/site/Portal.jsp" id="form_modify_field_${field.id}" class="d-grid gap-3">
+ <input type="hidden" name="page" value="agent_vision">
+ <input type="hidden" name="action" value="doModifyExtractorField">
+ <input type="hidden" name="vision_id" value="${vision.id}">
+ <input type="hidden" name="client_id" value="${client_id!}">
+ <input type="hidden" name="extractor_id" value="${extractor.id}">
+ <input type="hidden" name="field_id" value="${field.id}">
+ <div class="d-grid gap-2">
+ <label class="form-label" for="modify_field_name_${field.id}">#i18n{platform.agent.model.entity.extractorfield.attribute.fieldName} *</label>
+ <input type="text" id="modify_field_name_${field.id}" name="field_name" class="form-control" value="${field.fieldName!}" required>
+ </div>
+ <div class="d-grid gap-2">
+ <label class="form-label" for="modify_field_description_${field.id}">#i18n{platform.agent.model.entity.extractorfield.attribute.fieldDescription}</label>
+ <textarea id="modify_field_description_${field.id}" name="field_description" class="form-control" rows="3">${field.fieldDescription!}</textarea>
+ </div>
+ <div class="d-grid gap-2">
+ <label class="form-label" for="modify_field_type_${field.id}">#i18n{platform.agent.model.entity.extractorfield.attribute.fieldType} *</label>
+ <select id="modify_field_type_${field.id}" name="field_type" class="form-select" data-mu-toggle="select" required>
+ <#if field_types??>
+ <#list field_types as ft>
+ <option value="${ft.name()}" <#if field.fieldType.name() == ft.name()>selected</#if>>${ft.label!}</option>
+ </#list>
+ </#if>
+ </select>
+ </div>
+ </form>
+ </div>
+ <div class="modal-footer">
+ <button type="button" class="btn btn-light" data-bs-dismiss="modal">#i18n{portal.util.labelCancel}</button>
+ <button type="submit" form="form_modify_field_${field.id}" class="btn btn-primary">#i18n{portal.util.labelModify}</button>
+ </div>
+ </div></div></div>
+ </#list>
+ </#if>
+ </#list>
+ <#else>
+ <div class="text-center py-4 text-secondary">
+ <p class="fw-semibold">#i18n{platform.agent.vision.extractors.noneDefined}</p>
+ <p class="small">#i18n{platform.agent.vision.extractors.noneDefinedHelp}</p>
+ <button type="button" class="btn btn-primary mt-2" onclick="new bootstrap.Modal(document.getElementById('addExtractorDialog')).show()">
+ <i class="ti ti-plus"></i>
+ #i18n{platform.agent.vision.button.addExtractor}
+ </button>
+ </div>
+ </#if>
+
+<#-- Add Extractor Dialog -->
+<div class="modal fade" id="addExtractorDialog" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered modal-dialog-scrollable"><div class="modal-content">
+ <div class="modal-header">
+ <h1 class="modal-title fs-3">#i18n{platform.agent.vision.modal.addExtractor.title}</h1>
+ <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+ </div>
+ <div class="modal-body">
+ <form method="post" action="jsp/site/Portal.jsp" id="form_add_extractor" class="d-grid gap-3">
+ <input type="hidden" name="page" value="agent_vision">
+ <input type="hidden" name="action" value="doAddExtractor">
+ <input type="hidden" name="vision_id" value="${vision.id}">
+ <input type="hidden" name="client_id" value="${client_id!}">
+ <div class="d-grid gap-2">
+ <label class="form-label" for="extractor_name">#i18n{platform.agent.model.entity.extractor.attribute.extractorName} *</label>
+ <input type="text" id="extractor_name" name="extractor_name" class="form-control" required>
+ </div>
+ <div class="d-grid gap-2">
+ <label class="form-label" for="extractor_description">#i18n{platform.agent.model.entity.extractor.attribute.extractorDescription}</label>
+ <textarea id="extractor_description" name="extractor_description" class="form-control" rows="3"></textarea>
+ </div>
+ </form>
+ </div>
+ <div class="modal-footer">
+ <button type="button" class="btn btn-light" data-bs-dismiss="modal">#i18n{portal.util.labelCancel}</button>
+ <button type="submit" form="form_add_extractor" class="btn btn-primary">
+ <i class="ti ti-plus me-1"></i>#i18n{portal.util.labelCreate}
+ </button>
+ </div>
+ </div></div></div>

@@ -1,0 +1,148 @@
+<#ftl output_format="HTML">
+<#include "commons/page_header_decision_tree.html">
+
+<#assign conversationsUrl = "jsp/site/Portal.jsp?page=agent_decisiontree&view=decisionTreeConversations&tree_id=${decision_tree.id}&client_id=${client_id!}">
+
+<#if (conversation_count!0) gt 0>
+<div class="row g-3 mb-4">
+ <div class="col-6 col-lg-3">
+ <a href="${conversationsUrl}" class="card mu-card-clickable">
+ <div class="mu-card-pointer"><i class="ti ti-arrow-up-right"></i></div>
+ <div class="card-body">
+ <div class="d-flex align-items-center justify-content-between mb-2">
+ <span class="text-secondary small text-truncate">#i18n{platform.agent.decision_tree_conversations.kpi.total}</span>
+ <i class="ti ti-messages text-secondary"></i>
+ </div>
+ <p class="h3 fw-bold mb-0 text-truncate">${conversation_count!0}</p>
+ </div>
+ </a>
+ </div>
+ <div class="col-6 col-lg-3">
+ <a href="${conversationsUrl}" class="card mu-card-clickable">
+ <div class="mu-card-pointer"><i class="ti ti-arrow-up-right"></i></div>
+ <div class="card-body">
+ <div class="d-flex align-items-center justify-content-between mb-2">
+ <span class="text-secondary small text-truncate">#i18n{platform.agent.decision_tree_conversations.kpi.lastActivity}</span>
+ <i class="ti ti-clock text-secondary"></i>
+ </div>
+ <p class="h3 fw-bold mb-0 text-truncate">${(last_activity!"")?has_content?then(last_activity?string("dd/MM/yyyy HH:mm"), "-")}</p>
+ </div>
+ </a>
+ </div>
+ <div class="col-6 col-lg-3">
+ <a href="${conversationsUrl}" class="card mu-card-clickable">
+ <div class="mu-card-pointer"><i class="ti ti-arrow-up-right"></i></div>
+ <div class="card-body">
+ <div class="d-flex align-items-center justify-content-between mb-2">
+ <span class="text-secondary small text-truncate">#i18n{platform.agent.decision_tree_conversations.kpi.avgSteps}</span>
+ <i class="ti ti-route text-secondary"></i>
+ </div>
+ <p class="h3 fw-bold mb-0 text-truncate">${(avg_steps!0)?string["0.#"]}</p>
+ </div>
+ </a>
+ </div>
+ <div class="col-6 col-lg-3">
+ <a href="${conversationsUrl}" class="card mu-card-clickable">
+ <div class="mu-card-pointer"><i class="ti ti-arrow-up-right"></i></div>
+ <div class="card-body">
+ <div class="d-flex align-items-center justify-content-between mb-2">
+ <span class="text-secondary small text-truncate">#i18n{platform.agent.decision_tree_conversations.kpi.averageDuration}</span>
+ <i class="ti ti-hourglass text-secondary"></i>
+ </div>
+ <#assign mins = ((average_duration_seconds!0) / 60)?int>
+ <#assign secs = ((average_duration_seconds!0) % 60)?int>
+ <p class="h3 fw-bold mb-0 text-truncate"><#if mins gt 0>${mins}m </#if>${secs}s</p>
+ </div>
+ </a>
+ </div>
+</div>
+</#if>
+
+ <#-- ===== Macro: render a read-only node row ===== -->
+ <#macro nodeRowView node expanded=true collapseId="">
+ <div class="py-2">
+ <div class="d-flex align-items-center gap-2">
+ <#local hasChildren = node.transitions?? && node.transitions?has_content>
+ <#if hasChildren>
+ <a class="text-secondary text-decoration-none<#if !expanded> collapsed</#if>" data-bs-toggle="collapse" href="#${collapseId}" role="button" aria-expanded="${expanded?string('true','false')}">
+ <i class="ti ti-chevron-<#if expanded>down<#else>right</#if>"></i>
+ </a>
+ <#else>
+ <span class="d-inline-block" style="width: 20px;"></span>
+ </#if>
+ <#if !hasChildren><span class="badge bg-danger">#i18n{platform.decision_tree_conversations.node.end}</span></#if>
+ <#if hasChildren>
+ <a class="fw-medium text-decoration-none text-body" role="button" data-bs-toggle="collapse" href="#${collapseId}">${node.nodeTitle!}</a>
+ <#else>
+ <span class="fw-medium">${node.nodeTitle!}</span>
+ </#if>
+ </div>
+ <#if (node.content!"")?has_content>
+ <div class="small text-secondary ms-4 ps-1 mu-md-content">${node.content}</div>
+ <#else>
+ <div class="small text-secondary ms-4 ps-1 fst-italic">#i18n{platform.agent.decision_node.emptyContent}</div>
+ </#if>
+ </div>
+ </#macro>
+
+ <#-- ===== Macro: recursive read-only tree rendering ===== -->
+ <#macro renderNodeView nodeId nodeMap visited depth=0>
+ <#if nodeMap[nodeId]?? && !visited?seq_contains(nodeId)>
+ <#local node = nodeMap[nodeId]>
+ <#local expanded = (depth < 2)>
+ <#global _uid = (_uid!0) + 1>
+ <#local collapseId = "tree_${node.id}_${_uid}">
+ <@nodeRowView node=node expanded=expanded collapseId=collapseId />
+ <#if node.transitions?? && node.transitions?has_content>
+ <div class="collapse<#if expanded> show</#if> ms-4 border-start" id="${collapseId}">
+ <#list node.transitions as transition>
+ <div class="ps-3">
+ <div class="py-1 d-flex align-items-center gap-1 small text-secondary overflow-hidden">
+ <i class="ti ti-corner-down-right flex-shrink-0"></i>
+ <#if transition.label?? && transition.label?has_content>
+ <span class="badge bg-secondary text-truncate">${transition.label}</span>
+ <#else>
+ <span class="fst-italic">#i18n{platform.agent.decision_node.autoTransition.short}</span>
+ </#if>
+ </div>
+ <div class="ms-3 ps-3 border-start">
+ <@renderNodeView nodeId=transition.targetNodeId?string nodeMap=nodeMap visited=visited + [nodeId] depth=depth+1 />
+ </div>
+ </div>
+ </#list>
+ </div>
+ </#if>
+ <#elseif nodeMap[nodeId]?? && visited?seq_contains(nodeId)>
+ <div class="py-1 d-flex align-items-center gap-1 small text-secondary fst-italic">
+ <i class="ti ti-refresh"></i> ${nodeMap[nodeId].nodeTitle!} <span class="badge bg-light text-dark border">#i18n{platform.agent.decision_tree.cycle}</span>
+ </div>
+ </#if>
+ </#macro>
+
+ <#-- ===== Tree View (read-only) ===== -->
+ <div class="card mt-4">
+ <div class="card-header">
+ <h5 class="card-title mb-0"><i class="ti ti-binary-tree me-2"></i>#i18n{platform.agent.decision_tree.section.treeView}</h5>
+ </div>
+ <div class="card-body">
+ <#if !(decision_nodes?? && decision_nodes?has_content)>
+ <div class="text-center py-4 text-secondary">
+ <i class="ti ti-list-tree" style="font-size: 2rem;"></i>
+ <p class="mt-2">#i18n{platform.agent.decision_tree.noNodes}</p>
+ </div>
+ <#elseif root_nodes?size == 0>
+ <div class="alert alert-warning mb-3">
+ <i class="ti ti-alert-triangle me-1"></i>#i18n{platform.agent.decision_tree.warning.noRootNode}
+ </div>
+ <#list decision_nodes as node>
+ <@nodeRowView node=node />
+ </#list>
+ <#else>
+ <@renderNodeView nodeId=root_nodes[0].id?string nodeMap=node_map visited=[] />
+ </#if>
+ </div>
+ </div>
+
+<#include "commons/decision_tree_markdown_render.html">
+
+<#include "commons/decision_tree_preview_widget.html">

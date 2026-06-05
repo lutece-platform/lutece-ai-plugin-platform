@@ -1,0 +1,70 @@
+<#-- Shared API-key handling for the API playground pages. The key is never known by the server
+     (hash-at-rest): the user pastes it here; it lives in sessionStorage only, browser side. -->
+<#assign masked_code = "#i18n{platform.commons.api_key_playground.maskedCode}">
+
+<#macro apiKeyAuthCard>
+ <div class="col-12">
+  <div class="card">
+   <div class="card-header d-flex align-items-center gap-2">
+    <i class="ti ti-lock text-primary"></i>
+    <strong>#i18n{platform.agent.api.section.auth}</strong>
+   </div>
+   <div class="card-body">
+    <p class="text-secondary mb-2">#i18n{platform.agent.api.keyHelper}</p>
+    <div class="input-group mb-2" style="max-width:480px">
+     <input type="password" class="form-control font-monospace" id="api-key-input" placeholder="${masked_code}" autocomplete="off" />
+     <button type="button" class="btn btn-light" id="api-key-clear" title="#i18n{portal.util.labelDelete}"><i class="ti ti-x"></i></button>
+    </div>
+    <pre class="border rounded p-3 bg-body-tertiary small mb-0">X-Client-Code: ${masked_code}</pre>
+   </div>
+  </div>
+ </div>
+</#macro>
+
+<#macro apiKeyPlaygroundJs>
+<script>
+const API_KEY_STORAGE = 'platform_api_key';
+const API_KEY_PLACEHOLDER = '${masked_code}';
+
+const _keyInput = document.getElementById('api-key-input');
+_keyInput.value = sessionStorage.getItem(API_KEY_STORAGE) || '';
+_keyInput.addEventListener('input', () => sessionStorage.setItem(API_KEY_STORAGE, _keyInput.value.trim()));
+document.getElementById('api-key-clear').addEventListener('click', () => {
+  sessionStorage.removeItem(API_KEY_STORAGE);
+  _keyInput.value = '';
+});
+
+function getApiKey() {
+  return sessionStorage.getItem(API_KEY_STORAGE) || '';
+}
+
+function copyToClipboard(id, btn) {
+  const key = getApiKey();
+  let text = document.getElementById(id).innerText;
+  if (key) { text = text.replaceAll(API_KEY_PLACEHOLDER, key); }
+  navigator.clipboard.writeText(text).then(() => {
+    const icon = btn.querySelector('i');
+    icon.className = 'ti ti-check me-1';
+    setTimeout(() => { icon.className = 'ti ti-copy me-1'; }, 2000);
+  }).catch(() => {});
+}
+
+function runApiFetch(resultId, url, method, headers, body) {
+  const el = document.getElementById(resultId);
+  const pre = el.querySelector('pre');
+  el.classList.remove('d-none');
+  const key = getApiKey();
+  if (!key) {
+    pre.textContent = '#i18n{platform.agent.api.keyMissing}';
+    _keyInput.focus();
+    return;
+  }
+  headers = Object.assign({ 'X-Client-Code': key }, headers || {});
+  pre.textContent = "#i18n{platform.api_vision.test.loading}";
+  fetch(url, { method: method, headers: headers, body: body })
+    .then(r => r.text())
+    .then(text => { try { pre.textContent = JSON.stringify(JSON.parse(text), null, 2); } catch(e) { pre.textContent = text; } })
+    .catch(err => { pre.textContent = "#i18n{platform.api_vision.test.error}" + err; });
+}
+</script>
+</#macro>

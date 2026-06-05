@@ -1,0 +1,82 @@
+<#ftl output_format="HTML">
+<#assign resourceItem = (metrics.resourceItems[execution.resourceType][execution.resourceId])!>
+<#assign resourceName = resourceItem.name!(execution.resourceName!execution.resourceId)>
+<#if resource_type?? && resource_id??>
+ <#assign backUrl = "jsp/site/Portal.jsp?page=agent_observability&view=resourceObservability&resource_type=${resource_type}&resource_id=${resource_id}&client_id=${client.id}" />
+<#else>
+ <#assign backUrl = "jsp/site/Portal.jsp?page=platform&view=clientObservability&id=${client.id}" />
+</#if>
+
+<#assign inputJson = {}>
+<#attempt>
+ <#assign inputJson = (execution.inputData!"")?replace(':null', ':""')?replace(': null', ':""')?eval>
+<#recover></#attempt>
+
+<#macro statusBadge status>
+ <#switch status.value>
+ <#case "COMPLETED"><span class="badge text-bg-success">#i18n{platform.observability.status.completed}</span><#break>
+ <#case "ERROR"><span class="badge text-bg-danger">#i18n{platform.observability.status.error}</span><#break>
+ <#default><span class="badge text-bg-secondary">${status.value}</span>
+ </#switch>
+</#macro>
+
+<div class="px-3 mt-4">
+ <div>
+
+  <div class="mb-4">
+   <#if !(header_current_view??)>
+   <a href="${backUrl}" class="text-secondary small d-inline-block mb-2 text-decoration-underline">
+    <i class="ti ti-arrow-left"></i>#i18n{platform.xpage.action.back}
+   </a>
+   </#if>
+   <div class="d-flex align-items-center gap-2">
+    <i class="ti ti-binary-tree text-primary fs-4"></i>
+    <h2 class="fw-bold h4 mb-0">${resourceName}</h2>
+    <span class="ms-auto"><@statusBadge status=execution.status /></span>
+   </div>
+   <p class="text-secondary small mt-1">
+    #i18n{platform.agent.resource.decisiontree.name}
+    <span class="mx-1">&middot;</span>
+    <#if execution.startTime??>${execution.startTime?string("dd/MM/yyyy HH:mm:ss")}</#if>
+    <span class="mx-1">&middot;</span>
+    <code class="small">${execution.executionId}</code>
+   </p>
+  </div>
+
+  <#if execution.errorMessage?? && execution.errorMessage?has_content>
+  <div class="alert alert-danger mb-4">${execution.errorMessage}</div>
+  </#if>
+
+  <div class="card">
+   <div class="card-body p-3">
+    <table class="table table-sm mb-0">
+     <tbody>
+      <tr>
+       <th class="text-secondary fw-normal w-25">#i18n{platform.observability.table.resource}</th>
+       <td>${resourceName}</td>
+      </tr>
+      <tr>
+       <th class="text-secondary fw-normal">#i18n{platform.observability.table.start}</th>
+       <td><#if execution.startTime??>${execution.startTime?string("dd/MM/yyyy HH:mm:ss")}<#else>-</#if></td>
+      </tr>
+      <#if inputJson.attributes??>
+       <#if inputJson.attributes.conversationId?? && inputJson.attributes.conversationId?has_content>
+       <tr>
+        <th class="text-secondary fw-normal">Conversation ID</th>
+        <td><code class="small">${inputJson.attributes.conversationId}</code></td>
+       </tr>
+       </#if>
+       <#if inputJson.attributes.treeId?? && inputJson.attributes.treeId?has_content>
+       <tr>
+        <th class="text-secondary fw-normal">Tree ID</th>
+        <td>${inputJson.attributes.treeId}</td>
+       </tr>
+       </#if>
+      </#if>
+     </tbody>
+    </table>
+   </div>
+  </div>
+
+ </div>
+</div>

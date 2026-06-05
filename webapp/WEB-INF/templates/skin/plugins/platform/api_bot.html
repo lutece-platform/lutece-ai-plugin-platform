@@ -1,0 +1,248 @@
+<#ftl output_format="HTML">
+<#include "commons/page_header_bot.html">
+<#include "commons/api_key_playground.html" />
+
+<div class="row g-4">
+
+ <#-- Auth card -->
+ <@apiKeyAuthCard/>
+
+ <#-- Base URL card -->
+ <div class="col-12">
+  <div class="card">
+   <div class="card-header d-flex align-items-center gap-2">
+    <i class="ti ti-world text-primary"></i>
+    <strong>#i18n{platform.agent.api.section.baseUrl}</strong>
+   </div>
+   <div class="card-body">
+    <pre class="border rounded p-3 bg-body-tertiary small mb-0">${app_base_url!}rest/platform/agent/api</pre>
+   </div>
+  </div>
+ </div>
+
+ <#-- Endpoint: GET /bots -->
+ <div class="col-12">
+  <div class="card">
+   <div class="card-header d-flex align-items-center gap-2">
+    <span class="badge text-bg-success">GET</span>
+    <code>/bots</code>
+    <span class="text-secondary small">#i18n{platform.api_bot.endpoint.bots.description}</span>
+   </div>
+   <div class="card-body">
+    <pre class="border rounded p-3 bg-body-tertiary small" id="curl-bots">curl -s -X GET "${app_base_url!}rest/platform/agent/api/bots" \
+  -H "X-Client-Code: ${masked_code}"</pre>
+    <div class="d-flex gap-2 mt-2">
+     <button class="btn btn-sm btn-light" onclick="copyToClipboard('curl-bots', this)">
+      <i class="ti ti-copy me-1"></i>#i18n{platform.agent.api.copy}
+     </button>
+     <button class="btn btn-sm btn-primary" onclick="runApiFetch('result-bots', '${app_base_url!}rest/platform/agent/api/bots', 'GET', {}, null)">
+      <i class="ti ti-player-play me-1"></i>#i18n{platform.agent.api.test}
+     </button>
+    </div>
+    <div id="result-bots" class="mt-2 d-none">
+     <pre class="border rounded p-2 small bg-body-tertiary" style="max-height:300px;overflow:auto"></pre>
+    </div>
+   </div>
+  </div>
+ </div>
+
+ <#-- Endpoint: POST /query/stream/init -->
+ <div class="col-12">
+  <div class="card">
+   <div class="card-header d-flex align-items-center gap-2">
+    <span class="badge text-bg-warning text-dark">POST</span>
+    <code>/query/stream/init</code>
+    <span class="text-secondary small">#i18n{platform.api_bot.endpoint.streamInit.description}</span>
+   </div>
+   <div class="card-body">
+    <pre class="border rounded p-3 bg-body-tertiary small" id="curl-stream-init">curl -s -X POST "${app_base_url!}rest/platform/agent/api/query/stream/init" \
+  -H "X-Client-Code: ${masked_code}" \
+  -H "Content-Type: application/json" \
+  -d '{"botId":${bot.id},"userId":"user-1","query":"Bonjour"}'</pre>
+    <div class="d-flex gap-2 mt-2">
+     <button class="btn btn-sm btn-light" onclick="copyToClipboard('curl-stream-init', this)">
+      <i class="ti ti-copy me-1"></i>#i18n{platform.agent.api.copy}
+     </button>
+     <button class="btn btn-sm btn-primary" onclick="runApiFetch('result-stream-init', '${app_base_url!}rest/platform/agent/api/query/stream/init', 'POST', {'Content-Type':'application/json'}, JSON.stringify({botId:${bot.id},userId:'user-1',query:'Bonjour'}))">
+      <i class="ti ti-player-play me-1"></i>#i18n{platform.agent.api.test}
+     </button>
+    </div>
+    <div id="result-stream-init" class="mt-2 d-none">
+     <pre class="border rounded p-2 small bg-body-tertiary" style="max-height:300px;overflow:auto"></pre>
+    </div>
+   </div>
+  </div>
+ </div>
+
+ <#-- Endpoint: GET /query/stream/events/{streamId} (SSE) -->
+ <div class="col-12">
+  <div class="card">
+   <div class="card-header d-flex align-items-center gap-2">
+    <span class="badge text-bg-success">GET</span>
+    <code>/query/stream/events/{streamId}</code>
+    <span class="text-secondary small">#i18n{platform.api_bot.endpoint.streamEvents.description}</span>
+   </div>
+   <div class="card-body">
+    <pre class="border rounded p-3 bg-body-tertiary small" id="curl-stream-events">curl -N -X GET "${app_base_url!}rest/platform/agent/api/query/stream/events/{streamId}" \
+  -H "X-Client-Code: ${masked_code}" \
+  -H "Accept: text/event-stream"</pre>
+    <div class="d-flex gap-2 mt-2">
+     <button class="btn btn-sm btn-light" onclick="copyToClipboard('curl-stream-events', this)">
+      <i class="ti ti-copy me-1"></i>#i18n{platform.agent.api.copy}
+     </button>
+    </div>
+   </div>
+  </div>
+ </div>
+
+ <#-- Endpoint: POST /conversation/{uuid} -->
+ <div class="col-12">
+  <div class="card">
+   <div class="card-header d-flex align-items-center gap-2">
+    <span class="badge text-bg-warning text-dark">POST</span>
+    <code>/conversation/{uuid}</code>
+    <span class="text-secondary small">#i18n{platform.api_bot.endpoint.conversation.description}</span>
+   </div>
+   <div class="card-body">
+    <pre class="border rounded p-3 bg-body-tertiary small" id="curl-conversation">curl -s -X POST "${app_base_url!}rest/platform/agent/api/conversation/{uuid}" \
+  -H "X-Client-Code: ${masked_code}" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id":"user-1"}'</pre>
+    <div class="d-flex gap-2 mt-2">
+     <button class="btn btn-sm btn-light" onclick="copyToClipboard('curl-conversation', this)">
+      <i class="ti ti-copy me-1"></i>#i18n{platform.agent.api.copy}
+     </button>
+    </div>
+   </div>
+  </div>
+ </div>
+
+ <#-- Endpoint: POST /user/conversations -->
+ <div class="col-12">
+  <div class="card">
+   <div class="card-header d-flex align-items-center gap-2">
+    <span class="badge text-bg-warning text-dark">POST</span>
+    <code>/user/conversations</code>
+    <span class="text-secondary small">#i18n{platform.api_bot.endpoint.userConversations.description}</span>
+   </div>
+   <div class="card-body">
+    <pre class="border rounded p-3 bg-body-tertiary small" id="curl-user-convs">curl -s -X POST "${app_base_url!}rest/platform/agent/api/user/conversations" \
+  -H "X-Client-Code: ${masked_code}" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id":"user-1"}'</pre>
+    <div class="d-flex gap-2 mt-2">
+     <button class="btn btn-sm btn-light" onclick="copyToClipboard('curl-user-convs', this)">
+      <i class="ti ti-copy me-1"></i>#i18n{platform.agent.api.copy}
+     </button>
+    </div>
+   </div>
+  </div>
+ </div>
+
+ <#-- Endpoint: DELETE /conversation/{uuid}/{user_id} -->
+ <div class="col-12">
+  <div class="card">
+   <div class="card-header d-flex align-items-center gap-2">
+    <span class="badge text-bg-danger">DELETE</span>
+    <code>/conversation/{uuid}/{user_id}</code>
+    <span class="text-secondary small">#i18n{platform.api_bot.endpoint.conversationDelete.description}</span>
+   </div>
+   <div class="card-body">
+    <pre class="border rounded p-3 bg-body-tertiary small" id="curl-conv-delete">curl -s -X DELETE "${app_base_url!}rest/platform/agent/api/conversation/{uuid}/user-1" \
+  -H "X-Client-Code: ${masked_code}"</pre>
+    <div class="d-flex gap-2 mt-2">
+     <button class="btn btn-sm btn-light" onclick="copyToClipboard('curl-conv-delete', this)">
+      <i class="ti ti-copy me-1"></i>#i18n{platform.agent.api.copy}
+     </button>
+    </div>
+   </div>
+  </div>
+ </div>
+
+ <#-- Endpoint: DELETE /user/{user_id}/conversations -->
+ <div class="col-12">
+  <div class="card">
+   <div class="card-header d-flex align-items-center gap-2">
+    <span class="badge text-bg-danger">DELETE</span>
+    <code>/user/{user_id}/conversations</code>
+    <span class="text-secondary small">#i18n{platform.api_bot.endpoint.userConversationsDelete.description}</span>
+   </div>
+   <div class="card-body">
+    <pre class="border rounded p-3 bg-body-tertiary small" id="curl-conv-all-delete">curl -s -X DELETE "${app_base_url!}rest/platform/agent/api/user/user-1/conversations" \
+  -H "X-Client-Code: ${masked_code}"</pre>
+    <div class="d-flex gap-2 mt-2">
+     <button class="btn btn-sm btn-light" onclick="copyToClipboard('curl-conv-all-delete', this)">
+      <i class="ti ti-copy me-1"></i>#i18n{platform.agent.api.copy}
+     </button>
+    </div>
+   </div>
+  </div>
+ </div>
+
+ <#-- Endpoint: POST /user/rate -->
+ <div class="col-12">
+  <div class="card">
+   <div class="card-header d-flex align-items-center gap-2">
+    <span class="badge text-bg-warning text-dark">POST</span>
+    <code>/user/rate</code>
+    <span class="text-secondary small">#i18n{platform.api_bot.endpoint.userRate.description}</span>
+   </div>
+   <div class="card-body">
+    <pre class="border rounded p-3 bg-body-tertiary small" id="curl-rate">curl -s -X POST "${app_base_url!}rest/platform/agent/api/user/rate" \
+  -H "X-Client-Code: ${masked_code}" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id":"user-1"}'</pre>
+    <div class="d-flex gap-2 mt-2">
+     <button class="btn btn-sm btn-light" onclick="copyToClipboard('curl-rate', this)">
+      <i class="ti ti-copy me-1"></i>#i18n{platform.agent.api.copy}
+     </button>
+    </div>
+   </div>
+  </div>
+ </div>
+
+ <#-- Endpoint: GET /document/{bot_id}/{dataset_id}/{document_id} -->
+ <div class="col-12">
+  <div class="card">
+   <div class="card-header d-flex align-items-center gap-2">
+    <span class="badge text-bg-success">GET</span>
+    <code>/document/${bot.id}/{dataset_id}/{document_id}</code>
+    <span class="text-secondary small">#i18n{platform.api_bot.endpoint.document.description}</span>
+   </div>
+   <div class="card-body">
+    <pre class="border rounded p-3 bg-body-tertiary small" id="curl-doc">curl -s -OJ -X GET "${app_base_url!}rest/platform/agent/api/document/${bot.id}/{dataset_id}/{document_id}" \
+  -H "X-Client-Code: ${masked_code}"</pre>
+    <div class="d-flex gap-2 mt-2">
+     <button class="btn btn-sm btn-light" onclick="copyToClipboard('curl-doc', this)">
+      <i class="ti ti-copy me-1"></i>#i18n{platform.agent.api.copy}
+     </button>
+    </div>
+   </div>
+  </div>
+ </div>
+
+ <#-- Endpoint: POST /message/{id}/feedback -->
+ <div class="col-12">
+  <div class="card">
+   <div class="card-header d-flex align-items-center gap-2">
+    <span class="badge text-bg-warning text-dark">POST</span>
+    <code>/message/{id}/feedback</code>
+    <span class="text-secondary small">#i18n{platform.api_bot.endpoint.feedback.description}</span>
+   </div>
+   <div class="card-body">
+    <pre class="border rounded p-3 bg-body-tertiary small" id="curl-feedback">curl -s -X POST "${app_base_url!}rest/platform/agent/api/message/{id}/feedback" \
+  -H "X-Client-Code: ${masked_code}" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id":"user-1","is_positive":true,"comment":"Très bonne réponse"}'</pre>
+    <div class="d-flex gap-2 mt-2">
+     <button class="btn btn-sm btn-light" onclick="copyToClipboard('curl-feedback', this)">
+      <i class="ti ti-copy me-1"></i>#i18n{platform.agent.api.copy}
+     </button>
+    </div>
+   </div>
+  </div>
+ </div>
+
+</div>
+
+<@apiKeyPlaygroundJs/>

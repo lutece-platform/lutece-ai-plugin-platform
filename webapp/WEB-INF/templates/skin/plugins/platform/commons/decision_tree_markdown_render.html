@@ -1,0 +1,30 @@
+<#-- Renders every .mu-md-content block as markdown with the lutece-image: scheme resolved to rest/decisiontree/images/<hash>,
+     and each rendered <img> wrapped in an anchor that opens the full-size image in a new tab. Images are capped in the list rendering
+     so a large screenshot in a node does not blow up the page layout. -->
+<style>
+.mu-md-content img { max-width: 200px; max-height: 120px; height: auto; border-radius: 4px; display: inline-block; margin: 2px 0; vertical-align: middle; transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.mu-md-content a { display: inline-block; cursor: pointer; }
+.mu-md-content a:hover img { transform: scale(1.03); box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+</style>
+<script src="js/marked.min.js"></script>
+<script>
+<#noparse>
+(function() {
+ const IMAGE_SCHEME = 'lutece-image:';
+ const IMAGE_SERVE_PATH = 'rest/decisiontree/images/';
+ const resolve = (url) => url && url.startsWith(IMAGE_SCHEME) ? IMAGE_SERVE_PATH + url.slice(IMAGE_SCHEME.length) : url;
+ const renderer = new marked.Renderer();
+ renderer.image = (token) => {
+  const href = typeof token === 'object' && token !== null ? token.href : token;
+  const title = typeof token === 'object' && token !== null ? token.title : null;
+  const textAlt = typeof token === 'object' && token !== null ? token.text : null;
+  const src = resolve(href || '');
+  const titleAttr = title ? ` title="${title}"` : '';
+  return `<a href="${src}" target="_blank" rel="noopener noreferrer"><img src="${src}" alt="${textAlt || ''}"${titleAttr}></a>`;
+ };
+ document.querySelectorAll('.mu-md-content').forEach((el) => {
+  el.innerHTML = marked.parse(el.textContent, { renderer });
+ });
+})();
+</#noparse>
+</script>

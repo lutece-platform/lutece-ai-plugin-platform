@@ -1,0 +1,83 @@
+<#ftl output_format="HTML">
+<div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-3">
+ <div>
+ <a href="jsp/site/Portal.jsp?page=platform&view=viewClient&id=${client_id!}" class="small text-secondary text-decoration-none d-flex align-items-center gap-1 mb-2">
+ <i class="ti ti-arrow-left"></i>#i18n{platform.agent.sidebar.backToClient}
+ </a>
+ <h1 class="fw-bold mb-1">${decision_tree.treeName!}</h1>
+ <div class="d-flex align-items-center gap-2 mt-1">
+ <#if (is_published!false)>
+ <span class="badge text-bg-success">#i18n{platform.manage_resources.status.published}</span>
+ <#else>
+ <span class="badge text-bg-danger">#i18n{platform.manage_resources.status.unpublished}</span>
+ </#if>
+ <#if (decision_tree.treeDescription!"")?has_content>
+ <span class="text-secondary">${decision_tree.treeDescription}</span>
+ </#if>
+ </div>
+ </div>
+ <div class="d-flex gap-2 mt-3 mt-md-0">
+ <#if header_current_view?? && (header_current_view == 'viewDecisionTree' || header_current_view == 'modifyDecisionTree')>
+ <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#dtcPreviewOffcanvas">
+ <i class="ti ti-eye me-1"></i>#i18n{platform.agent.decision_tree.action.preview}
+ </button>
+ </#if>
+ <#if decision_tree.userCanModify!false>
+ <#if (is_published!false)>
+ <a href="jsp/site/Portal.jsp?page=platform&action=doCancelSubscription&id_subscription=${subscription.id}" class="btn btn-light">
+ <i class="ti ti-cloud-off me-1"></i>#i18n{platform.manage_resources.action.unpublish}
+ </a>
+ <#else>
+ <a href="jsp/site/Portal.jsp?page=platform&action=doSubscribeToResource&resource_type=DECISION_TREE&resource_id=${decision_tree.id}&client_id=${client_id!}" class="btn btn-light">
+ <i class="ti ti-cloud-upload me-1"></i>#i18n{platform.manage_resources.action.publish}
+ </a>
+ </#if>
+ </#if>
+ <form method="post" action="jsp/site/Portal.jsp" class="d-inline">
+ <input type="hidden" name="page" value="agent_decisiontree">
+ <input type="hidden" name="action" value="doExportDecisionTree">
+ <input type="hidden" name="tree_id" value="${decision_tree.id}">
+ <input type="hidden" name="client_id" value="${client_id!}">
+ <button type="submit" class="btn btn-light">
+ <i class="ti ti-download me-1"></i>#i18n{platform.agent.decision_tree.action.export}
+ </button>
+ </form>
+ <#if decision_tree.userCanDelete!false>
+ <form method="post" action="jsp/site/Portal.jsp" class="d-inline">
+ <input type="hidden" name="page" value="agent_decisiontree">
+ <input type="hidden" name="action" value="confirmRemoveDecisionTree">
+ <input type="hidden" name="tree_id" value="${decision_tree.id}">
+ <input type="hidden" name="client_id" value="${client_id!}">
+ <button type="submit" class="btn btn-light">
+ <i class="ti ti-trash me-1"></i>#i18n{platform.agent.xpage.action.delete}
+ </button>
+ </form>
+ </#if>
+ </div>
+</div>
+<ul class="nav nav-pills mb-4">
+ <li class="nav-item">
+ <a class="nav-link<#if header_current_view! == 'viewDecisionTree'> active</#if>" href="jsp/site/Portal.jsp?page=agent_decisiontree&view=viewDecisionTree&tree_id=${decision_tree.id}&client_id=${client_id!}">
+ <i class="ti ti-eye me-2"></i>#i18n{platform.agent.sidebar.view}
+ </a>
+ </li>
+ <#if decision_tree.userCanModify!false>
+ <li class="nav-item">
+ <a class="nav-link<#if header_current_view! == 'modifyDecisionTree'> active</#if>" href="jsp/site/Portal.jsp?page=agent_decisiontree&view=modifyDecisionTree&tree_id=${decision_tree.id}&client_id=${client_id!}">
+ <i class="ti ti-pencil me-2"></i>#i18n{platform.agent.sidebar.modify}
+ </a>
+ </li>
+ </#if>
+ <li class="nav-item">
+ <a class="nav-link<#if header_current_view! == 'decisionTreeConversations'> active</#if>" href="jsp/site/Portal.jsp?page=agent_decisiontree&view=decisionTreeConversations&tree_id=${decision_tree.id}&client_id=${client_id!}">
+ <i class="ti ti-messages me-2"></i>#i18n{platform.agent.decision_tree.action.conversations}
+ </a>
+ </li>
+ <li class="nav-item">
+ <a class="nav-link<#if header_current_view! == 'apiDecisionTree'> active</#if>" href="jsp/site/Portal.jsp?page=agent_decisiontree&view=apiDecisionTree&tree_id=${decision_tree.id}&client_id=${client_id!}">
+ <i class="ti ti-code me-2"></i>#i18n{platform.agent.api.tab.title}
+ </a>
+ </li>
+</ul>
+<#if (infos!)?has_content><#list (infos![]) as info><div class="alert alert-info">${info!}</div></#list></#if>
+<#if (errors!)?has_content><#list (errors![]) as error><div class="alert alert-danger">${error.message!}</div></#list></#if>

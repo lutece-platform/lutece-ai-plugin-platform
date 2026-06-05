@@ -1,0 +1,60 @@
+<#ftl output_format="HTML">
+<div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-3">
+ <div>
+ <a href="jsp/site/Portal.jsp?page=platform&view=viewClient&id=${model.clientId}" class="small text-secondary text-decoration-none d-flex align-items-center gap-1 mb-2">
+ <i class="ti ti-arrow-left"></i>#i18n{platform.agent.sidebar.backToClient}
+ </a>
+ <h1 class="fw-bold mb-1">${(model.provider.providerName)!model.id}</h1>
+ <div class="d-flex align-items-center gap-2 mt-1">
+ <#if (is_published!false)>
+ <span class="badge text-bg-success">#i18n{platform.manage_resources.status.published}</span>
+ <#else>
+ <span class="badge text-bg-danger">#i18n{platform.manage_resources.status.unpublished}</span>
+ </#if>
+ </div>
+ </div>
+ <div class="d-flex gap-2 mt-3 mt-md-0">
+ <#if model.userCanModify!false>
+ <#if (is_published!false)>
+ <a href="jsp/site/Portal.jsp?page=platform&action=doCancelSubscription&id_subscription=${subscription.id}" class="btn btn-light">
+ <i class="ti ti-world-off me-1"></i>#i18n{platform.manage_resources.action.unpublish}
+ </a>
+ <#else>
+ <a href="jsp/site/Portal.jsp?page=platform&action=doSubscribeToResource&resource_type=MODEL&resource_id=${model.id}&client_id=${model.clientId}" class="btn btn-light">
+ <i class="ti ti-upload me-1"></i>#i18n{platform.manage_resources.action.publish}
+ </a>
+ </#if>
+ </#if>
+ <#if model.userCanDelete>
+ <a class="btn btn-light" href="jsp/site/Portal.jsp?page=agent_model&action=confirmRemoveModel&model_id=${model.id}&client_id=${model.clientId}">
+ <i class="ti ti-trash me-1"></i>#i18n{portal.util.labelDelete}
+ </a>
+ </#if>
+ </div>
+</div>
+<ul class="nav nav-pills mb-4">
+ <li class="nav-item">
+ <a class="nav-link<#if header_current_view! == 'viewModel'> active</#if>" href="jsp/site/Portal.jsp?page=agent_model&view=viewModel&model_id=${model.id}&client_id=${model.clientId}">
+ <i class="ti ti-eye me-2"></i>#i18n{platform.agent.sidebar.view}
+ </a>
+ </li>
+ <#if model.userCanModify!false>
+ <li class="nav-item">
+ <a class="nav-link<#if header_current_view! == 'modifyModel'> active</#if>" href="jsp/site/Portal.jsp?page=agent_model&view=modifyModel&model_id=${model.id}&client_id=${model.clientId}">
+ <i class="ti ti-pencil me-2"></i>#i18n{platform.agent.sidebar.modify}
+ </a>
+ </li>
+ </#if>
+ <li class="nav-item">
+ <a class="nav-link<#if header_current_view! == 'resourceObservability' || header_current_view! == 'executionDetails'> active</#if>" href="jsp/site/Portal.jsp?page=agent_observability&view=resourceObservability&resource_type=MODEL&resource_id=${model.id}&client_id=${model.clientId}">
+ <i class="ti ti-chart-bar me-2"></i>#i18n{platform.xpage.observability.title}
+ </a>
+ </li>
+ <li class="nav-item">
+ <a class="nav-link<#if header_current_view! == 'apiModel'> active</#if>" href="jsp/site/Portal.jsp?page=agent_model&view=apiModel&model_id=${model.id}&client_id=${model.clientId}">
+ <i class="ti ti-code me-2"></i>#i18n{platform.agent.api.tab.title}
+ </a>
+ </li>
+</ul>
+<#if (infos!)?has_content><#list (infos![]) as info><div class="alert alert-info">${info!}</div></#list></#if>
+<#if (errors!)?has_content><#list (errors![]) as error><div class="alert alert-danger">${error.message!}</div></#list></#if>

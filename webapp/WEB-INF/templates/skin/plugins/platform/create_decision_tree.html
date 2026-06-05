@@ -1,0 +1,146 @@
+<#ftl output_format="HTML">
+
+<#-- Header -->
+<div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4">
+ <div>
+ <a href="jsp/site/Portal.jsp?page=platform&view=viewClient&id=${client_id!}" class="small text-secondary text-decoration-none d-flex align-items-center gap-1 mb-2">
+ <i class="ti ti-arrow-left"></i>#i18n{platform.xpage.action.back}
+ </a>
+ <h1 class="fw-bold mb-1">#i18n{platform.agent.create_decision_tree.pageTitle}</h1>
+ <p class="text-secondary mb-0">#i18n{platform.agent.create_decision_tree.subtitle}</p>
+ </div>
+ <div>
+ <button type="button" class="btn btn-light" data-bs-toggle="modal" data-bs-target="#modal_import_tree">
+ <i class="ti ti-upload me-1"></i>#i18n{platform.agent.decision_tree.action.import}
+ </button>
+ </div>
+</div>
+
+ <#if (infos!)?has_content><#list (infos![]) as info><div class="alert alert-info">${info!}</div></#list></#if>
+ <#if (errors!)?has_content><#list (errors![]) as error><div class="alert alert-danger">${error.message!}</div></#list></#if>
+
+ <form method="post" action="jsp/site/Portal.jsp" id="form_create_tree">
+ <input type="hidden" name="page" value="agent_decisiontree">
+ <input type="hidden" name="action" value="doCreateDecisionTree">
+ <input type="hidden" name="client_id" value="${client_id!}">
+ <input type="hidden" name="logo_base64" id="logo_base64" value="">
+
+ <div class="card">
+ <div class="card-body">
+ <h5 class="fw-bold mb-3"><i class="ti ti-binary-tree me-2"></i>#i18n{platform.agent.decision_tree.section.generalConfiguration}</h5>
+ <div class="row g-3">
+ <div class="col-md-6">
+ <label for="tree_name" class="form-label">#i18n{platform.agent.model.entity.decisionTree.attribute.treeName} *</label>
+ <input type="text" class="form-control" id="tree_name" name="tree_name" placeholder="#i18n{platform.agent.decision_tree.placeholder.treeName}" required>
+ <div class="form-text">#i18n{platform.agent.decision_tree.help.treeName}</div>
+ </div>
+ <div class="col-md-6">
+ <label for="tree_description" class="form-label">#i18n{platform.agent.model.entity.decisionTree.attribute.treeDescription}</label>
+ <input type="text" class="form-control" id="tree_description" name="tree_description" placeholder="#i18n{platform.agent.decision_tree.placeholder.treeDescription}">
+ <div class="form-text">#i18n{platform.agent.decision_tree.help.treeDescription}</div>
+ </div>
+ <div class="col-12">
+ <label for="logo_file" class="form-label">#i18n{platform.agent.model.entity.bot.attribute.logo}</label>
+ <input type="file" class="form-control" id="logo_file" name="logo_file" accept="image/*">
+ <div class="form-text">#i18n{platform.agent.modify_bot.logoHelp}</div>
+ <div id="logo_preview" class="mt-2 d-none d-flex align-items-center gap-2">
+ <img id="logo_preview_img" src="" alt="Logo" class="rounded-circle object-fit-cover" style="width:48px;height:48px">
+ <button type="button" class="btn btn-light" id="remove_logo"><i class="ti ti-trash"></i></button>
+ </div>
+ </div>
+ <div class="col-12">
+ <div class="alert alert-info d-flex align-items-center mb-0" role="alert">
+ <i class="ti ti-info-circle me-2 fs-4"></i>
+ <div>#i18n{platform.agent.create_decision_tree.contentEditableAfterCreation}</div>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+
+ <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+ <a href="jsp/site/Portal.jsp?page=platform&view=viewClient&id=${client_id!}" class="btn btn-light">
+ #i18n{platform.agent.xpage.action.cancel}
+ </a>
+ <button type="submit" class="btn btn-primary">
+ <i class="ti ti-device-floppy me-1"></i>#i18n{platform.agent.create_decision_tree.buttonLabel}
+ </button>
+ </div>
+ </form>
+
+ <div class="modal fade" id="modal_import_tree" tabindex="-1">
+ <div class="modal-dialog modal-dialog-centered">
+ <div class="modal-content">
+ <div class="modal-header">
+ <h1 class="modal-title fs-3">#i18n{platform.agent.decision_tree.action.import}</h1>
+ <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+ </div>
+ <div class="modal-body">
+ <p class="text-secondary small mb-3">#i18n{platform.agent.decision_tree.import.description}</p>
+ <form method="post" action="jsp/site/Portal.jsp" id="form_import_tree">
+ <input type="hidden" name="page" value="agent_decisiontree">
+ <input type="hidden" name="action" value="doImportDecisionTree">
+ <input type="hidden" name="client_id" value="${client_id!}">
+ <input type="hidden" name="import_json" id="import_json_hidden" value="">
+ <input type="file" class="form-control" id="import_file" accept=".json" required>
+ </form>
+ </div>
+ <div class="modal-footer">
+ <button type="button" class="btn btn-light" data-bs-dismiss="modal">#i18n{platform.agent.xpage.action.cancel}</button>
+ <button type="submit" form="form_import_tree" class="btn btn-primary" id="btn_import" disabled>
+ <i class="ti ti-upload me-1"></i>#i18n{platform.agent.decision_tree.action.import}
+ </button>
+ </div>
+ </div>
+ </div>
+ </div>
+
+<script>
+// Logo handling
+(function() {
+ var logoFile = document.getElementById('logo_file');
+ var logoPreview = document.getElementById('logo_preview');
+ var logoPreviewImg = document.getElementById('logo_preview_img');
+ var logoBase64Input = document.getElementById('logo_base64');
+ var removeLogo = document.getElementById('remove_logo');
+
+ logoFile.addEventListener('change', function(e) {
+  var file = e.target.files[0];
+  if (file) {
+   if (file.size > 2 * 1024 * 1024) { alert("#i18n{platform.create_bot.js.fileTooLarge}"); logoFile.value = ''; return; }
+   if (!file.type.startsWith('image/')) { alert("#i18n{platform.create_bot.js.selectImageFile}"); logoFile.value = ''; return; }
+   var reader = new FileReader();
+   reader.onload = function(e) { logoBase64Input.value = e.target.result; logoPreviewImg.src = e.target.result; logoPreview.classList.remove('d-none'); };
+   reader.readAsDataURL(file);
+  }
+ });
+
+ removeLogo.addEventListener('click', function() { logoFile.value = ''; logoBase64Input.value = ''; logoPreview.classList.add('d-none'); logoPreviewImg.src = ''; });
+})();
+
+// Import file handling
+(function() {
+ var importFile = document.getElementById('import_file');
+ var importHidden = document.getElementById('import_json_hidden');
+ var btnImport = document.getElementById('btn_import');
+ if (!importFile) return;
+ importFile.addEventListener('change', function(e) {
+  var file = e.target.files[0];
+  if (!file) { btnImport.disabled = true; importHidden.value = ''; return; }
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+   try {
+    JSON.parse(ev.target.result);
+    importHidden.value = ev.target.result;
+    btnImport.disabled = false;
+   } catch(err) {
+    alert("#i18n{platform.create_decision_tree.js.invalidJsonFile}");
+    importFile.value = '';
+    importHidden.value = '';
+    btnImport.disabled = true;
+   }
+  };
+  reader.readAsText(file);
+ });
+})();
+</script>

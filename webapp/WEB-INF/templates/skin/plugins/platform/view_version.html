@@ -1,0 +1,62 @@
+<#ftl output_format="HTML">
+<#assign flowJson = flow_json!"{}" >
+<#assign nodeTypesJson = node_types_json!"{}" >
+<#assign inputSchemaJson = input_schema_json!"[]" >
+<link rel="stylesheet" href="css/Pipeline.css" />
+
+<div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-3">
+ <div>
+ <a href="jsp/site/Portal.jsp?page=agent_pipeline&view=viewPipeline&id_pipeline=${pipeline.id}&client_id=${pipeline.idClient}" class="small text-secondary text-decoration-none d-flex align-items-center gap-1 mb-2">
+ <i class="ti ti-arrow-left"></i>#i18n{platform.agent.sidebar.backToClient}
+ </a>
+ <h1 class="fw-bold mb-1">${pipeline.name} - v${version.versionName}</h1>
+ <#if (version.description!"")?has_content>
+ <p class="text-secondary mb-0">${version.description}</p>
+ </#if>
+ </div>
+ <div class="d-flex gap-2 mt-3 mt-md-0">
+ <#if version.current>
+ <span class="badge text-bg-primary align-self-center">#i18n{platform.agent.modify_pipeline.versionCurrent}</span>
+ </#if>
+ </div>
+</div>
+
+<div id="pipeline-container">
+ <div id="pipeline-designer"></div>
+</div>
+
+<script id="pipeline-flow-data" type="application/json">${flowJson?no_esc}</script>
+<script id="pipeline-nodetypes-data" type="application/json">${nodeTypesJson?no_esc}</script>
+<script id="pipeline-inputschema-data" type="application/json">${inputSchemaJson?no_esc}</script>
+
+<script src="js/tribute.min.js"></script>
+<script src="js/marked.min.js"></script>
+<script type="module">
+ import { PipelineDesigner } from './js/pipeline/pipeline-designer.js';
+
+ document.addEventListener('DOMContentLoaded', () => {
+  let flow = {};
+  let nodeTypes = {};
+  try {
+   flow = JSON.parse(document.getElementById('pipeline-flow-data').textContent);
+   if (typeof flow === 'string') flow = JSON.parse(flow);
+  } catch(e) { console.error('Failed to parse flow data:', e); }
+  try {
+   nodeTypes = JSON.parse(document.getElementById('pipeline-nodetypes-data').textContent);
+  } catch(e) { console.error('Failed to parse nodeTypes data:', e); }
+
+  let inputSchema = [];
+  try {
+   inputSchema = JSON.parse(document.getElementById('pipeline-inputschema-data').textContent);
+  } catch(e) { console.error('Failed to parse inputSchema data:', e); }
+
+  const designer = new PipelineDesigner('pipeline-designer', {
+   pipelineId: ${pipeline.id},
+   versionId: ${version.id},
+   flow: flow,
+   nodeTypes: nodeTypes,
+   inputSchema: inputSchema,
+   readOnly: <#if pipeline.userCanModify!false>false<#else>true</#if>
+  });
+ });
+</script>

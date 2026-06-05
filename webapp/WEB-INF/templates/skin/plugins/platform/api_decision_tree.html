@@ -1,0 +1,97 @@
+<#ftl output_format="HTML">
+<#include "commons/page_header_decision_tree.html">
+<#include "commons/api_key_playground.html" />
+
+<div class="row g-4">
+
+ <@apiKeyAuthCard/>
+
+ <div class="col-12">
+  <div class="card">
+   <div class="card-header d-flex align-items-center gap-2">
+    <i class="ti ti-world text-primary"></i>
+    <strong>#i18n{platform.agent.api.section.baseUrl}</strong>
+   </div>
+   <div class="card-body">
+    <pre class="border rounded p-3 bg-body-tertiary small mb-0">${app_base_url!}rest/platform/agent/api</pre>
+   </div>
+  </div>
+ </div>
+
+ <#-- GET /decisiontrees -->
+ <div class="col-12">
+  <div class="card">
+   <div class="card-header d-flex align-items-center gap-2">
+    <span class="badge text-bg-success">GET</span>
+    <code>/decisiontrees</code>
+    <span class="text-secondary small">#i18n{platform.api_decision_tree.list.description}</span>
+   </div>
+   <div class="card-body">
+    <pre class="border rounded p-3 bg-body-tertiary small" id="curl-trees">curl -s -X GET "${app_base_url!}rest/platform/agent/api/decisiontrees" \
+  -H "X-Client-Code: ${masked_code}"</pre>
+    <div class="d-flex gap-2 mt-2">
+     <button class="btn btn-sm btn-light" onclick="copyToClipboard('curl-trees', this)">
+      <i class="ti ti-copy me-1"></i>#i18n{platform.agent.api.copy}
+     </button>
+     <button class="btn btn-sm btn-primary" onclick="runApiFetch('result-trees', '${app_base_url!}rest/platform/agent/api/decisiontrees', 'GET', {}, null)">
+      <i class="ti ti-player-play me-1"></i>#i18n{platform.agent.api.test}
+     </button>
+    </div>
+    <div id="result-trees" class="mt-2 d-none">
+     <pre class="border rounded p-2 small bg-body-tertiary" style="max-height:300px;overflow:auto"></pre>
+    </div>
+   </div>
+  </div>
+ </div>
+
+ <#-- GET /decisiontrees/{id}/start -->
+ <div class="col-12">
+  <div class="card">
+   <div class="card-header d-flex align-items-center gap-2">
+    <span class="badge text-bg-success">GET</span>
+    <code>/decisiontrees/${decision_tree.id}/start</code>
+    <span class="text-secondary small">#i18n{platform.api_decision_tree.start.description}</span>
+   </div>
+   <div class="card-body">
+    <p class="text-secondary small mb-2">#i18n{platform.api_decision_tree.conversationId.help}</p>
+    <pre class="border rounded p-3 bg-body-tertiary small" id="curl-start">curl -s -X GET "${app_base_url!}rest/platform/agent/api/decisiontrees/${decision_tree.id}/start?conversationId=abc-123" \
+  -H "X-Client-Code: ${masked_code}"</pre>
+    <div class="d-flex gap-2 mt-2">
+     <button class="btn btn-sm btn-light" onclick="copyToClipboard('curl-start', this)">
+      <i class="ti ti-copy me-1"></i>#i18n{platform.agent.api.copy}
+     </button>
+     <button class="btn btn-sm btn-primary" onclick="runApiFetch('result-start', '${app_base_url!}rest/platform/agent/api/decisiontrees/${decision_tree.id}/start?conversationId=abc-123', 'GET', {}, null)">
+      <i class="ti ti-player-play me-1"></i>#i18n{platform.agent.api.test}
+     </button>
+    </div>
+    <div id="result-start" class="mt-2 d-none">
+     <pre class="border rounded p-2 small bg-body-tertiary" style="max-height:300px;overflow:auto"></pre>
+    </div>
+   </div>
+  </div>
+ </div>
+
+ <#-- GET /decisiontrees/{id}/nodes/{nodeId} -->
+ <div class="col-12">
+  <div class="card">
+   <div class="card-header d-flex align-items-center gap-2">
+    <span class="badge text-bg-success">GET</span>
+    <code>/decisiontrees/${decision_tree.id}/nodes/{nodeId}</code>
+    <span class="text-secondary small">#i18n{platform.api_decision_tree.node.description}</span>
+   </div>
+   <div class="card-body">
+    <p class="text-secondary small mb-2">#i18n{platform.api_decision_tree.conversationId.help}</p>
+    <pre class="border rounded p-3 bg-body-tertiary small" id="curl-node">curl -s -X GET "${app_base_url!}rest/platform/agent/api/decisiontrees/${decision_tree.id}/nodes/{nodeId}?conversationId=abc-123" \
+  -H "X-Client-Code: ${masked_code}"</pre>
+    <div class="d-flex gap-2 mt-2">
+     <button class="btn btn-sm btn-light" onclick="copyToClipboard('curl-node', this)">
+      <i class="ti ti-copy me-1"></i>#i18n{platform.agent.api.copy}
+     </button>
+    </div>
+   </div>
+  </div>
+ </div>
+
+</div>
+
+<@apiKeyPlaygroundJs/>

@@ -1,0 +1,24 @@
+<#-- Decision Tree Preview — opens a MacroUI push offcanvas embedding the <dtc-chat-widget> web component -->
+<script src="js/dtc-chat-widget.min.js" defer></script>
+
+<#assign _previewEndMessage = (decision_tree.endMessage!)?has_content?then(decision_tree.endMessage, "#i18n{platform.agent.decision_tree.preview.endReached}")>
+
+<aside id="dtcPreviewOffcanvas" class="offcanvas offcanvas-end border-start-md" data-bs-scroll="true" data-mu-push-offset tabindex="-1" style="width: 480px;">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title">#i18n{platform.agent.decision_tree.preview.title}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body pt-0 d-flex flex-column">
+        <dtc-chat-widget
+            tree-id="${decision_tree.id}"
+            rest-base-url="rest/platform/agent/admin/decisiontrees/"
+            tree-name="${decision_tree.treeName!}"
+            welcome-message="${decision_tree.welcomeMessage!}"
+            end-message="${_previewEndMessage}"
+            i18n-restart="#i18n{platform.agent.decision_tree.action.restart}"
+            i18n-back="#i18n{platform.agent.decision_tree.preview.back}"
+            i18n-node-not-found="#i18n{platform.agent.decision_tree.preview.nodeNotFound}"
+            i18n-no-start-node="#i18n{platform.agent.decision_tree.preview.noStartNode}">
+        </dtc-chat-widget>
+    </div>
+</aside>

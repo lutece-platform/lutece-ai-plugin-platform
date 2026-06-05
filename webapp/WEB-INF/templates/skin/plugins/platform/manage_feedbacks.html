@@ -1,0 +1,90 @@
+<#ftl output_format="HTML">
+<#if bot??>
+<#include "commons/page_header_bot.html">
+</#if>
+ <div class="d-flex align-items-center justify-content-end mb-4">
+ <form method="get" action="jsp/site/Portal.jsp" class="d-flex align-items-center" id="feedbackFilterForm">
+ <input type="hidden" name="page" value="agent_conversation">
+ <input type="hidden" name="view" value="manageFeedbacks">
+ <#if selected_bot_id??><input type="hidden" name="bot_id" value="${selected_bot_id}"></#if>
+ <select name="status" id="feedbackStatusFilter" class="form-select" data-mu-toggle="select">
+ <option value="">#i18n{platform.agent.manage_feedbacks.allStatuses}</option>
+ <option value="pending" <#if current_status?? && current_status == "pending">selected</#if>>#i18n{platform.agent.manage_feedbacks.status.pending}</option>
+ <option value="processed" <#if current_status?? && current_status == "processed">selected</#if>>#i18n{platform.agent.manage_feedbacks.status.processed}</option>
+ </select>
+ </form>
+ </div>
+
+ <#if feedbacks?? && (feedbacks?size > 0)>
+ <div class="table-responsive">
+ <table class="table table-hover align-middle mb-0">
+ <thead>
+ <tr>
+ <th></th>
+ <th>#i18n{platform.agent.manage_feedbacks.columnComment}</th>
+ <th>#i18n{platform.agent.manage_feedbacks.columnStatus}</th>
+ <th class="text-end">#i18n{platform.agent.manage_feedbacks.columnDate}</th>
+ <th></th>
+ </tr>
+ </thead>
+ <tbody>
+ <#list feedbacks as feedback>
+ <tr>
+ <td>
+ <#if feedback.positive>
+ <i class="ti ti-thumb-up text-success"></i>
+ <#else>
+ <i class="ti ti-thumb-down text-danger"></i>
+ </#if>
+ </td>
+ <td>
+ <#if feedback.comment?? && (feedback.comment?length gt 0)>
+ <span class="small">${feedback.comment}</span>
+ <#else>
+ <span class="text-secondary italic small">#i18n{platform.agent.manage_feedbacks.noComment}</span>
+ </#if>
+ </td>
+ <td>
+ <#if feedback.status.getValue() == "pending">
+ <span class="badge text-bg-warning">#i18n{platform.agent.manage_feedbacks.status.pending}</span>
+ <#else>
+ <span class="badge text-bg-success">#i18n{platform.agent.manage_feedbacks.status.processed}</span>
+ </#if>
+ </td>
+ <td class="text-end text-secondary small">${feedback.createdAt?string("dd/MM/yyyy HH:mm")}</td>
+ <td class="text-end">
+ <div class="d-flex gap-1 justify-content-end">
+ <#if feedback.status.getValue() == "pending" && bot?? && bot.userCanModify>
+ <form method="post" action="jsp/site/Portal.jsp" class="d-inline">
+ <input type="hidden" name="page" value="agent_conversation">
+ <input type="hidden" name="action" value="markFeedbackProcessed">
+ <input type="hidden" name="feedback_id" value="${feedback.id}">
+ <input type="hidden" name="bot_id" value="${selected_bot_id}">
+ <button type="submit" class="btn btn-sm btn-light" title="#i18n{platform.agent.manage_feedbacks.markProcessed}">
+ <i class="ti ti-check"></i>
+ </button>
+ </form>
+ </#if>
+ <a href="jsp/site/Portal.jsp?page=agent_conversation&view=viewConversation&conversation_uuid=${feedback.conversationUuid!""}" class="btn btn-sm btn-light" title="#i18n{platform.agent.manage_feedbacks.viewConversation}">
+ <i class="ti ti-eye"></i>
+ </a>
+ </div>
+ </td>
+ </tr>
+ </#list>
+ </tbody>
+ </table>
+ </div>
+ <#else>
+ <div class="text-center py-4 text-secondary">
+ <p>#i18n{platform.agent.manage_feedbacks.noFeedbacks}</p>
+ </div>
+ </#if>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+ document.getElementById('feedbackStatusFilter').addEventListener('change', function() {
+ document.getElementById('feedbackFilterForm').submit();
+ });
+});
+</script>

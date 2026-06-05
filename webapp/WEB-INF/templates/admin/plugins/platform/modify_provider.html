@@ -1,0 +1,138 @@
+<@pageContainer>
+    <@pageColumn>
+        <@pageHeader title='#i18n{platform.agent.modify_provider.pageTitle} - ${provider.providerName}'>
+        </@pageHeader>
+        <@messages infos=infos warnings=warnings errors=errors />
+        
+        <@tform method='post' name='modify_provider' action='jsp/admin/plugins/platform/ManageAgentProviders.jsp' boxed=true>
+            <@input type='hidden' name='action' value='modifyProvider' />
+            <@input type='hidden' name='provider_id' value='${provider.id}' />
+            
+            <@row>
+                <@columns xs=12 md=6>
+                    <@formGroup labelFor='provider_name' labelKey='#i18n{platform.agent.model.entity.provider.attribute.providerName}' mandatory=true>
+                        <@input type='text' name='provider_name' id='provider_name' value='${provider.providerName!}' />
+                    </@formGroup>
+                </@columns>
+                <@columns xs=12 md=6>
+                    <@formGroup labelFor='provider_description' labelKey='#i18n{platform.agent.model.entity.provider.attribute.providerDescription}'>
+                        <@input type='text' name='provider_description' id='provider_description' value='${provider.providerDescription!}' />
+                    </@formGroup>
+                </@columns>
+                
+                <@columns xs=12 md=6>
+                    <@formGroup labelFor='provider_type' labelKey='#i18n{platform.agent.model.entity.provider.attribute.providerType}' mandatory=true>
+                        <@select name='provider_type' id='provider_type' params='onchange="togglePriceFields()"'>
+                            <option value="llm" <#if provider.providerType == "llm">selected</#if>>LLM</option>
+                            <option value="embedding" <#if provider.providerType == "embedding">selected</#if>>Embedding</option>
+                            <option value="document_intelligence" <#if provider.providerType == "document_intelligence">selected</#if>>Document Intelligence</option>
+                        </@select>
+                    </@formGroup>
+                </@columns>
+
+                <@columns xs=12 md=6>
+                    <@formGroup labelFor='provider_vendor' labelKey='#i18n{platform.agent.model.entity.provider.attribute.providerVendor}' mandatory=true>
+                        <@select name='provider_vendor' id='provider_vendor' params='onchange="toggleVendorFields()"'>
+                            <option value="azure_openai" <#if (provider.providerVendor!"azure_openai") == "azure_openai">selected</#if>>Azure OpenAI</option>
+                            <option value="anthropic" <#if (provider.providerVendor!"") == "anthropic">selected</#if>>Anthropic</option>
+                            <option value="mistral" <#if (provider.providerVendor!"") == "mistral">selected</#if>>Mistral AI</option>
+                        </@select>
+                    </@formGroup>
+                </@columns>
+
+                <@columns xs=12 md=6 params='id="deploymentEndpointSection"'>
+                    <@formGroup labelFor='deployment_endpoint' labelKey='#i18n{platform.agent.model.entity.provider.attribute.deploymentEndpoint}' mandatory=true>
+                        <@input type='text' name='deployment_endpoint' id='deployment_endpoint' value='${provider.deploymentEndpoint!}' />
+                    </@formGroup>
+                </@columns>
+
+                <@columns xs=12 md=6 params='id="deploymentNameSection"'>
+                    <@formGroup labelFor='deployment_name' labelKey='#i18n{platform.agent.model.entity.provider.attribute.deploymentName}' mandatory=true>
+                        <@input type='text' name='deployment_name' id='deployment_name' value='${provider.deploymentName!}' />
+                    </@formGroup>
+                </@columns>
+                <@columns xs=12 md=6>
+                    <@formGroup labelFor='deployment_model_name' labelKey='#i18n{platform.agent.model.entity.provider.attribute.deploymentModelName}' mandatory=true>
+                        <@input type='text' name='deployment_model_name' id='deployment_model_name' value='${provider.deploymentModelName!}' />
+                    </@formGroup>
+                </@columns>
+
+                <@columns xs=12 md=6 params='id="deploymentApiVersionSection"'>
+                    <@formGroup labelFor='deployment_api_version' labelKey='#i18n{platform.agent.model.entity.provider.attribute.deploymentApiVersion}'>
+                        <@input type='text' name='deployment_api_version' id='deployment_api_version' value='${provider.deploymentApiVersion!}' />
+                    </@formGroup>
+                </@columns>
+                <@columns xs=12 md=6>
+                    <@formGroup labelFor='deployment_api_key' labelKey='#i18n{platform.agent.model.entity.provider.attribute.deploymentApiKey}' mandatory=true>
+                        <@input type='password' name='deployment_api_key' id='deployment_api_key' value='${provider.deploymentApiKey!}' />
+                    </@formGroup>
+                </@columns>
+      <@columns xs=12 md=6 params='id="tokenInputPriceSection"'>
+<@formGroup labelFor='tokenInputPrice1M' labelKey='#i18n{platform.agent.model.entity.provider.attribute.tokenInputPrice1M}'>
+    <input type='number' class="form-control" name='tokenInputPrice1M' id='tokenInputPrice1M' value='${provider.tokenInputPrice1M?string?replace(",", ".")!}' step='0.000001' min='0' />
+</@formGroup>
+</@columns>
+<@columns xs=12 md=6 params='id="tokenOutputPriceSection"'>
+  <@formGroup labelFor='tokenOutputPrice1M' labelKey='#i18n{platform.agent.model.entity.provider.attribute.tokenOutputPrice1M}'>
+    <input type='number' class="form-control" name='tokenOutputPrice1M' id='tokenOutputPrice1M' value='${provider.tokenOutputPrice1M?string?replace(",", ".")!}' step='0.000001' min='0' />
+</@formGroup>
+</@columns>
+
+<@columns xs=12 md=6 params='id="documentAnalysisPriceSection" style="display:none;"'>
+    <@formGroup labelFor='documentAnalysisPrice1000Pages' labelKey='#i18n{platform.agent.model.entity.provider.attribute.documentAnalysisPrice1000Pages}'>
+        <input type='number' class="form-control" name='documentAnalysisPrice1000Pages' id='documentAnalysisPrice1000Pages' value='${(provider.documentAnalysisPrice1000Pages?string?replace(",", "."))!"1.50"}' step='0.0001' min='0' />
+    </@formGroup>
+</@columns>
+                <@columns xs=12>
+                    <@formGroup>
+                        <@button type='submit' name='action_modifyProvider' buttonIcon='check' title='#i18n{platform.agent.modify_provider.buttonModify}' size='' />
+                        <@aButton href='jsp/admin/plugins/platform/ManageAgentProviders.jsp?view=manageProviders' buttonIcon='x' title='#i18n{portal.util.labelCancel}' color='secondary' size='' />
+                    </@formGroup>
+                </@columns>
+            </@row>
+        </@tform>
+        
+        <script>
+            function togglePriceFields() {
+                var providerType = document.getElementById('provider_type').value;
+                var tokenInputSection = document.getElementById('tokenInputPriceSection');
+                var tokenOutputSection = document.getElementById('tokenOutputPriceSection');
+                var docAnalysisSection = document.getElementById('documentAnalysisPriceSection');
+
+                if (providerType === 'document_intelligence') {
+                    tokenInputSection.style.display = 'none';
+                    tokenOutputSection.style.display = 'none';
+                    docAnalysisSection.style.display = 'block';
+                } else {
+                    tokenInputSection.style.display = 'block';
+                    tokenOutputSection.style.display = 'block';
+                    docAnalysisSection.style.display = 'none';
+                }
+            }
+
+            function toggleVendorFields() {
+                var providerVendor = document.getElementById('provider_vendor').value;
+                var deploymentNameSection = document.getElementById('deploymentNameSection');
+                var deploymentApiVersionSection = document.getElementById('deploymentApiVersionSection');
+                var deploymentEndpointSection = document.getElementById('deploymentEndpointSection');
+                var deploymentEndpointLabel = deploymentEndpointSection.querySelector('label');
+
+                if (providerVendor === 'anthropic' || providerVendor === 'mistral') {
+                    deploymentNameSection.style.display = 'none';
+                    deploymentApiVersionSection.style.display = 'none';
+                    if (deploymentEndpointLabel) {
+                        deploymentEndpointLabel.innerHTML = deploymentEndpointLabel.innerHTML.replace(' *', '');
+                    }
+                } else {
+                    deploymentNameSection.style.display = 'block';
+                    deploymentApiVersionSection.style.display = 'block';
+                }
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+                togglePriceFields();
+                toggleVendorFields();
+            });
+        </script>
+    </@pageColumn>
+</@pageContainer>

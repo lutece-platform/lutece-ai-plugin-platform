@@ -1,0 +1,87 @@
+<@pageContainer>
+<@pageColumn>
+<@pageHeader title='#i18n{platform.manage_subscriptions.title}'>
+  <@tform action="jsp/admin/plugins/platform/ManageSubscriptions.jsp" method="get">
+    <@formGroup  labelFor="id_client" formStyle="horizontal">
+      <@inputGroup>
+        <@select name="id_client" id="id_client" class="form-select">
+          <@option label="#i18n{platform.manage_subscriptions.selectClient}" value="" selected=(!(client??)) />
+          <#if client_list??>
+            <#list client_list as client_item>
+              <@option label="${client_item.name}" value="${client_item.id}" selected=(client?? && client.id == client_item.id) />
+            </#list>
+          </#if>
+        </@select>
+        <@inputGroupItem type="btn">
+          <@button type="submit" color="primary" buttonIcon="filter" hideTitle=["all"]>#i18n{platform.manage_subscriptions.buttonFilter}</@button>
+        </@inputGroupItem>
+      </@inputGroup>
+    </@formGroup>
+  </@tform>
+</@pageHeader>
+
+<@messages infos=infos />
+<@messages errors=errors />
+<@messages warnings=warnings />
+
+<@table headBody=true>
+    <@tr>
+        <@th>#i18n{platform.model.entity.subscription.attribute.client}</@th>
+        <@th>#i18n{platform.model.entity.subscription.attribute.resourceType}</@th>
+        <@th>#i18n{platform.model.entity.subscription.attribute.resourceId}</@th>
+        <@th>#i18n{platform.model.entity.subscription.attribute.subscriptionDate}</@th>
+        <@th>#i18n{platform.model.entity.subscription.attribute.status}</@th>
+        <@th>#i18n{portal.util.labelActions}</@th>
+    </@tr>
+    <@tableHeadBodySeparator />
+    <#if subscription_list?has_content>
+        <#list subscription_list as subscription>
+            <@tr>
+                <@td>
+                    <#-- Find client name from client list -->
+                    <#assign clientName = "">
+                    <#if client_list??>
+                        <#list client_list as client_item>
+                            <#if client_item.id == subscription.clientId>
+                                <#assign clientName = client_item.name>
+                                <#break>
+                            </#if>
+                        </#list>
+                    </#if>
+                    ${clientName}
+                </@td>
+                <@td>${subscription.resourceType!''}</@td>
+                <@td>${subscription.resourceId!''}</@td>
+                <@td>${subscription.subscriptionDate!''}</@td>
+                <@td>
+                    <#if subscription.status.value == "active">
+                        <@tag color='success'><@icon style='check-circle' /> #i18n{platform.subscription.status.active}</@tag>
+                    <#elseif subscription.status.value == "suspended">
+                        <@tag color='warning'><@icon style='pause-circle' /> #i18n{platform.subscription.status.suspended}</@tag>
+                    <#elseif subscription.status.value == "cancelled">
+                        <@tag color='danger'><@icon style='times-circle' /> #i18n{platform.subscription.status.cancelled}</@tag>
+                    <#else>
+                        <@tag color='secondary'>${subscription.status.value}</@tag>
+                    </#if>
+                </@td>
+                <@td>
+                    <#if permissions.canModify && subscription.status.value == "active">
+                        <@aButton href='jsp/admin/plugins/platform/ManageSubscriptions.jsp?action=cancelSubscription&id_subscription=${subscription.id}' title='#i18n{platform.manage_subscriptions.buttonCancel}' buttonIcon='x' color='warning' size='sm' />
+                    </#if>
+                    <#if permissions.canDelete>
+                        <@aButton href='jsp/admin/plugins/platform/ManageSubscriptions.jsp?action=confirmDeleteSubscription&id_subscription=${subscription.id}' title='#i18n{portal.util.labelDelete}' buttonIcon='trash' color='danger' size='sm' />
+                    </#if>
+                </@td>
+            </@tr>
+        </#list>
+    <#else>
+        <@tr>
+            <@td colspan=6>
+                <@empty title="#i18n{platform.manage_subscriptions.noSubscriptions}" />
+            </@td>
+        </@tr>
+    </#if>
+</@table>
+
+</@pageColumn>
+</@pageContainer>

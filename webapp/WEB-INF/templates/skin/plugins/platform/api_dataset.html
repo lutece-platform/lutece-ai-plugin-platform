@@ -1,0 +1,200 @@
+<#ftl output_format="HTML">
+<#include "commons/page_header_dataset.html">
+<#include "commons/api_key_playground.html" />
+
+<div class="row g-4">
+
+ <@apiKeyAuthCard/>
+
+ <div class="col-12">
+  <div class="card">
+   <div class="card-header d-flex align-items-center gap-2">
+    <i class="ti ti-world text-primary"></i>
+    <strong>#i18n{platform.agent.api.section.baseUrl}</strong>
+   </div>
+   <div class="card-body">
+    <pre class="border rounded p-3 bg-body-tertiary small mb-0">${app_base_url!}rest/platform/agent/api/datasets</pre>
+   </div>
+  </div>
+ </div>
+
+ <#-- GET / -->
+ <div class="col-12">
+  <div class="card">
+   <div class="card-header d-flex align-items-center gap-2">
+    <span class="badge text-bg-success">GET</span>
+    <code>/</code>
+    <span class="text-secondary small">#i18n{platform.api_dataset.endpoint.list.description}</span>
+   </div>
+   <div class="card-body">
+    <pre class="border rounded p-3 bg-body-tertiary small" id="curl-datasets">curl -s -X GET "${app_base_url!}rest/platform/agent/api/datasets/" \
+  -H "X-Client-Code: ${masked_code}"</pre>
+    <div class="d-flex gap-2 mt-2">
+     <button class="btn btn-sm btn-light" onclick="copyToClipboard('curl-datasets', this)">
+      <i class="ti ti-copy me-1"></i>#i18n{platform.agent.api.copy}
+     </button>
+     <button class="btn btn-sm btn-primary" onclick="runApiFetch('result-datasets', '${app_base_url!}rest/platform/agent/api/datasets/', 'GET', {}, null)">
+      <i class="ti ti-player-play me-1"></i>#i18n{platform.agent.api.test}
+     </button>
+    </div>
+    <div id="result-datasets" class="mt-2 d-none">
+     <pre class="border rounded p-2 small bg-body-tertiary" style="max-height:300px;overflow:auto"></pre>
+    </div>
+   </div>
+  </div>
+ </div>
+
+ <#-- GET /{id} -->
+ <div class="col-12">
+  <div class="card">
+   <div class="card-header d-flex align-items-center gap-2">
+    <span class="badge text-bg-success">GET</span>
+    <code>/${dataset.id}</code>
+    <span class="text-secondary small">#i18n{platform.api_dataset.endpoint.info.description}</span>
+   </div>
+   <div class="card-body">
+    <pre class="border rounded p-3 bg-body-tertiary small" id="curl-dataset-info">curl -s -X GET "${app_base_url!}rest/platform/agent/api/datasets/${dataset.id}" \
+  -H "X-Client-Code: ${masked_code}"</pre>
+    <div class="d-flex gap-2 mt-2">
+     <button class="btn btn-sm btn-light" onclick="copyToClipboard('curl-dataset-info', this)">
+      <i class="ti ti-copy me-1"></i>#i18n{platform.agent.api.copy}
+     </button>
+     <button class="btn btn-sm btn-primary" onclick="runApiFetch('result-dataset-info', '${app_base_url!}rest/platform/agent/api/datasets/${dataset.id}', 'GET', {}, null)">
+      <i class="ti ti-player-play me-1"></i>#i18n{platform.agent.api.test}
+     </button>
+    </div>
+    <div id="result-dataset-info" class="mt-2 d-none">
+     <pre class="border rounded p-2 small bg-body-tertiary" style="max-height:300px;overflow:auto"></pre>
+    </div>
+   </div>
+  </div>
+ </div>
+
+ <#-- GET /{id}/documents -->
+ <div class="col-12">
+  <div class="card">
+   <div class="card-header d-flex align-items-center gap-2">
+    <span class="badge text-bg-success">GET</span>
+    <code>/${dataset.id}/documents</code>
+    <span class="text-secondary small">#i18n{platform.api_dataset.endpoint.documents.description}</span>
+   </div>
+   <div class="card-body">
+    <pre class="border rounded p-3 bg-body-tertiary small" id="curl-documents">curl -s -X GET "${app_base_url!}rest/platform/agent/api/datasets/${dataset.id}/documents" \
+  -H "X-Client-Code: ${masked_code}"</pre>
+    <div class="d-flex gap-2 mt-2">
+     <button class="btn btn-sm btn-light" onclick="copyToClipboard('curl-documents', this)">
+      <i class="ti ti-copy me-1"></i>#i18n{platform.agent.api.copy}
+     </button>
+     <button class="btn btn-sm btn-primary" onclick="runApiFetch('result-documents', '${app_base_url!}rest/platform/agent/api/datasets/${dataset.id}/documents', 'GET', {}, null)">
+      <i class="ti ti-player-play me-1"></i>#i18n{platform.agent.api.test}
+     </button>
+    </div>
+    <div id="result-documents" class="mt-2 d-none">
+     <pre class="border rounded p-2 small bg-body-tertiary" style="max-height:300px;overflow:auto"></pre>
+    </div>
+   </div>
+  </div>
+ </div>
+
+ <#-- GET /{id}/folders -->
+ <div class="col-12">
+  <div class="card">
+   <div class="card-header d-flex align-items-center gap-2">
+    <span class="badge text-bg-success">GET</span>
+    <code>/${dataset.id}/folders</code>
+    <span class="text-secondary small">#i18n{platform.api_dataset.endpoint.folders.description}</span>
+   </div>
+   <div class="card-body">
+    <pre class="border rounded p-3 bg-body-tertiary small" id="curl-folders">curl -s -X GET "${app_base_url!}rest/platform/agent/api/datasets/${dataset.id}/folders" \
+  -H "X-Client-Code: ${masked_code}"</pre>
+    <div class="d-flex gap-2 mt-2">
+     <button class="btn btn-sm btn-light" onclick="copyToClipboard('curl-folders', this)">
+      <i class="ti ti-copy me-1"></i>#i18n{platform.agent.api.copy}
+     </button>
+     <button class="btn btn-sm btn-primary" onclick="runApiFetch('result-folders', '${app_base_url!}rest/platform/agent/api/datasets/${dataset.id}/folders', 'GET', {}, null)">
+      <i class="ti ti-player-play me-1"></i>#i18n{platform.agent.api.test}
+     </button>
+    </div>
+    <div id="result-folders" class="mt-2 d-none">
+     <pre class="border rounded p-2 small bg-body-tertiary" style="max-height:300px;overflow:auto"></pre>
+    </div>
+   </div>
+  </div>
+ </div>
+
+ <#-- POST /{id}/folders -->
+ <div class="col-12">
+  <div class="card">
+   <div class="card-header d-flex align-items-center gap-2">
+    <span class="badge text-bg-warning text-dark">POST</span>
+    <code>/${dataset.id}/folders</code>
+    <span class="text-secondary small">#i18n{platform.api_dataset.endpoint.folderCreate.description}</span>
+   </div>
+   <div class="card-body">
+    <pre class="border rounded p-3 bg-body-tertiary small" id="curl-folder-create">curl -s -X POST "${app_base_url!}rest/platform/agent/api/datasets/${dataset.id}/folders" \
+  -H "X-Client-Code: ${masked_code}" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Mon dossier","parent_folder_id":null,"description":""}'</pre>
+    <div class="d-flex gap-2 mt-2">
+     <button class="btn btn-sm btn-light" onclick="copyToClipboard('curl-folder-create', this)">
+      <i class="ti ti-copy me-1"></i>#i18n{platform.agent.api.copy}
+     </button>
+    </div>
+   </div>
+  </div>
+ </div>
+
+ <#-- POST /{id}/documents/upload -->
+ <div class="col-12">
+  <div class="card">
+   <div class="card-header d-flex align-items-center gap-2">
+    <span class="badge text-bg-warning text-dark">POST</span>
+    <code>/${dataset.id}/documents/upload</code>
+    <span class="text-secondary small">#i18n{platform.api_dataset.endpoint.upload.description}</span>
+   </div>
+   <div class="card-body">
+    <pre class="border rounded p-3 bg-body-tertiary small" id="curl-upload">curl -s -X POST "${app_base_url!}rest/platform/agent/api/datasets/${dataset.id}/documents/upload" \
+  -H "X-Client-Code: ${masked_code}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "folder_id": null,
+    "chunk_size": 500,
+    "chunk_overlap": 50,
+    "use_document_intelligence": false,
+    "document_intelligence_provider_id": null,
+    "files": [
+      {"file_name":"document.txt","content_type":"text/plain","content":"SGVsbG8gV29ybGQ="}
+    ]
+  }'</pre>
+    <div class="d-flex gap-2 mt-2">
+     <button class="btn btn-sm btn-light" onclick="copyToClipboard('curl-upload', this)">
+      <i class="ti ti-copy me-1"></i>#i18n{platform.agent.api.copy}
+     </button>
+    </div>
+   </div>
+  </div>
+ </div>
+
+ <#-- DELETE /{id}/documents/{documentId} -->
+ <div class="col-12">
+  <div class="card">
+   <div class="card-header d-flex align-items-center gap-2">
+    <span class="badge text-bg-danger">DELETE</span>
+    <code>/${dataset.id}/documents/{documentId}</code>
+    <span class="text-secondary small">#i18n{platform.api_dataset.endpoint.documentDelete.description}</span>
+   </div>
+   <div class="card-body">
+    <pre class="border rounded p-3 bg-body-tertiary small" id="curl-doc-delete">curl -s -X DELETE "${app_base_url!}rest/platform/agent/api/datasets/${dataset.id}/documents/{documentId}" \
+  -H "X-Client-Code: ${masked_code}"</pre>
+    <div class="d-flex gap-2 mt-2">
+     <button class="btn btn-sm btn-light" onclick="copyToClipboard('curl-doc-delete', this)">
+      <i class="ti ti-copy me-1"></i>#i18n{platform.agent.api.copy}
+     </button>
+    </div>
+   </div>
+  </div>
+ </div>
+
+</div>
+
+<@apiKeyPlaygroundJs/>

@@ -1,0 +1,16 @@
+<#ftl output_format="HTML">
+<#include "commons/page_header_model.html">
+
+ <div class="card">
+ <div class="card-header"><h5 class="card-title mb-0"><i class="ti ti-settings me-2"></i>#i18n{platform.agent.create_model.general_info}</h5></div>
+ <div class="card-body d-grid gap-2">
+ <div>
+ <div class="text-secondary small">#i18n{platform.agent.model.entity.model.attribute.providerId}</div>
+ <div class="fw-semibold">${(model.provider.providerName)!"-"}</div>
+ </div>
+ <div>
+ <div class="text-secondary small">#i18n{platform.agent.model.entity.model.attribute.providerType}</div>
+ <div class="fw-semibold">${(model.provider.providerType)!"-"}</div>
+ </div>
+ </div>
+ </div>

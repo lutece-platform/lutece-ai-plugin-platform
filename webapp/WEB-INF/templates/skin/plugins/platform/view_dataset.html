@@ -1,0 +1,231 @@
+<#ftl output_format="HTML">
+<#include "commons/page_header_dataset.html">
+ <#-- ===== KPI ===== -->
+ <div class="row g-3 mb-4">
+ <div class="col-6 col-lg-4 d-flex">
+ <div class="card flex-fill">
+ <div class="card-body">
+ <div class="d-flex align-items-center justify-content-between mb-2">
+ <span class="text-secondary small text-truncate">#i18n{platform.observability.kpi.totalExecutions}</span>
+ <i class="ti ti-player-play text-secondary"></i>
+ </div>
+ <p class="h3 fw-bold mb-0 text-truncate">${(stats.executionCount)!0}</p>
+ </div>
+ </div>
+ </div>
+ <div class="col-6 col-lg-4 d-flex">
+ <div class="card flex-fill">
+ <div class="card-body">
+ <div class="d-flex align-items-center justify-content-between mb-2">
+ <span class="text-secondary small text-truncate">#i18n{platform.observability.kpi.successRate}</span>
+ <i class="ti ti-percentage text-secondary"></i>
+ </div>
+ <p class="h3 fw-bold mb-0 text-truncate">${((stats.successRate)!0)?string["0.#"]}%</p>
+ </div>
+ </div>
+ </div>
+ <div class="col-6 col-lg-4 d-flex">
+ <div class="card flex-fill">
+ <div class="card-body">
+ <div class="d-flex align-items-center justify-content-between mb-2">
+ <span class="text-secondary small text-truncate">#i18n{platform.observability.kpi.totalCost}</span>
+ <i class="ti ti-currency-euro text-secondary"></i>
+ </div>
+ <p class="h3 fw-bold mb-0 text-truncate">${((stats.totalCost)!0)?string["0.####"]}&euro;</p>
+ </div>
+ </div>
+ </div>
+ </div>
+
+ <#-- ===== Row 1: Routing Rules + Config ===== -->
+ <div class="row g-3 mb-3">
+ <div class="col-md-8 d-flex">
+ <div class="card flex-fill">
+ <div class="card-header"><h5 class="card-title mb-0">#i18n{platform.agent.model.entity.dataset.attribute.datasetRoutingRules}</h5></div>
+ <div class="card-body">
+ <#if (dataset.datasetRoutingRules!)?has_content>
+ <div class="overflow-auto" style="white-space:pre-wrap;max-height:300px">${dataset.datasetRoutingRules!}</div>
+ <#else>
+ <p class="text-secondary italic">#i18n{platform.agent.view_dataset.noRoutingRules}</p>
+ </#if>
+ </div>
+ </div>
+ </div>
+ <div class="col-md-4 d-flex">
+ <div class="card flex-fill">
+ <div class="card-header"><h5 class="card-title mb-0">#i18n{platform.agent.modify_bot.technical_config}</h5></div>
+ <div class="card-body d-grid gap-2">
+ <#assign llmName = "-">
+ <#if llm_providers?? && dataset.llmProviderId??>
+ <#list llm_providers as p>
+ <#if p.id == dataset.llmProviderId><#assign llmName = p.providerName></#if>
+ </#list>
+ </#if>
+ <#assign embedName = "-">
+ <#if embed_providers?? && dataset.embedProviderId??>
+ <#list embed_providers as p>
+ <#if p.id == dataset.embedProviderId><#assign embedName = p.providerName></#if>
+ </#list>
+ </#if>
+ <div>
+ <div class="text-secondary small">#i18n{platform.agent.model.entity.dataset.attribute.llmProviderId}</div>
+ <div class="fw-medium">${llmName}</div>
+ </div>
+ <div>
+ <div class="text-secondary small">#i18n{platform.agent.model.entity.dataset.attribute.embedProviderId}</div>
+ <div class="fw-medium">${embedName}</div>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+
+ <#-- ===== Row 2: Folders + Documents ===== -->
+ <#assign clientQs><#if (client_id!)?has_content>&client_id=${client_id!}</#if></#assign>
+ <#assign currentFolderQs><#if (current_folder)??>&folder_id=${current_folder.id}</#if></#assign>
+ <div class="card">
+ <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+ <nav aria-label="breadcrumb" class="flex-grow-1">
+ <ol class="breadcrumb mb-0">
+ <li class="breadcrumb-item<#if !(current_folder)??> active</#if>">
+ <#if (current_folder)??>
+ <a href="jsp/site/Portal.jsp?page=agent_dataset&view=viewDataset&dataset_id=${dataset.id!}${clientQs}"><i class="ti ti-home me-1"></i>${dataset.datasetName!}</a>
+ <#else>
+ <i class="ti ti-home me-1"></i>${dataset.datasetName!}
+ </#if>
+ </li>
+ <#if (breadcrumb!)?has_content>
+ <#list breadcrumb as crumb>
+ <#if crumb_has_next>
+ <li class="breadcrumb-item"><a href="jsp/site/Portal.jsp?page=agent_dataset&view=viewDataset&dataset_id=${dataset.id!}&folder_id=${crumb.id}${clientQs}">${crumb.name!}</a></li>
+ <#else>
+ <li class="breadcrumb-item active" aria-current="page">${crumb.name!}</li>
+ </#if>
+ </#list>
+ </#if>
+ </ol>
+ </nav>
+ <#if (dataset.userCanModify!false)>
+ <div class="d-flex gap-2">
+ <a href="jsp/site/Portal.jsp?page=agent_dataset&view=createFolder&dataset_id=${dataset.id!}<#if (current_folder)??>&parent_folder_id=${current_folder.id}</#if>${clientQs}" class="btn btn-light btn-sm">
+ <i class="ti ti-folder-plus me-1"></i>#i18n{platform.agent.folder.buttonAdd}
+ </a>
+ <a href="jsp/site/Portal.jsp?page=agent_dataset&view=createDocument&dataset_id=${dataset.id!}${currentFolderQs}${clientQs}" class="btn btn-primary btn-sm">
+ <i class="ti ti-plus me-1"></i>#i18n{platform.agent.document.buttonAdd}
+ </a>
+ <a href="jsp/site/Portal.jsp?page=agent_dataset&action=doReindexDataset&dataset_id=${dataset.id!}${clientQs}" class="btn btn-light btn-sm">
+ <i class="ti ti-refresh me-1"></i>#i18n{platform.agent.document.fullIndexing}
+ </a>
+ </div>
+ </#if>
+ </div>
+ <div class="card-body">
+ <#if (subfolders!)?has_content>
+ <div class="mb-3">
+ <div class="text-secondary small mb-2">#i18n{platform.agent.folder.sectionTitle} (${subfolders?size})</div>
+ <div class="list-group">
+ <#list subfolders as folder>
+ <div class="list-group-item d-flex align-items-center justify-content-between">
+ <a href="jsp/site/Portal.jsp?page=agent_dataset&view=viewDataset&dataset_id=${dataset.id!}&folder_id=${folder.id}${clientQs}" class="text-decoration-none flex-grow-1">
+ <i class="ti ti-folder me-2 text-secondary"></i>
+ <span class="fw-medium">${folder.name!}</span>
+ <#if (folder.description!)?has_content>
+ <span class="text-secondary small ms-2">— ${folder.description!}</span>
+ </#if>
+ </a>
+ <#if (dataset.userCanModify!false)>
+ <div class="d-flex gap-1">
+ <a href="jsp/site/Portal.jsp?page=agent_dataset&view=modifyFolder&dataset_id=${dataset.id!}&folder_id=${folder.id}${clientQs}" class="btn btn-light btn-sm" title="#i18n{platform.agent.xpage.action.modify}">
+ <i class="ti ti-pencil"></i>
+ </a>
+ <a href="jsp/site/Portal.jsp?page=agent_dataset&action=confirmRemoveFolder&dataset_id=${dataset.id!}&folder_id=${folder.id}${clientQs}" class="btn btn-light btn-sm" title="#i18n{platform.agent.xpage.action.delete}">
+ <i class="ti ti-trash"></i>
+ </a>
+ </div>
+ </#if>
+ </div>
+ </#list>
+ </div>
+ </div>
+ </#if>
+ <#if (subfolders!)?has_content && (documents_list!)?has_content>
+ <hr class="my-3">
+ </#if>
+ <#if (documents_list!)?has_content>
+ <div class="table-responsive">
+ <table class="table table-hover align-middle mb-0">
+ <thead>
+ <tr>
+ <th>#i18n{platform.agent.model.entity.document.attribute.name}</th>
+ <th>#i18n{platform.agent.document.chunks}</th>
+ <th>#i18n{platform.agent.document.fileSize}</th>
+ <th>#i18n{platform.agent.document.status}</th>
+ <th class="text-end">#i18n{platform.agent.document.lastIndexed}</th>
+ <th></th>
+ </tr>
+ </thead>
+ <tbody>
+ <#list documents_list as document>
+ <tr>
+ <td><span class="fw-medium">${document.name!}</span></td>
+ <td>${(document_chunks[document.id?c])!0}</td>
+ <td class="text-secondary small"><#assign fSize = (document_file_sizes[document.id?c])!0><#if fSize gt 1048576>${(fSize / 1048576)?string["0.#"]} MB<#elseif fSize gt 1024>${(fSize / 1024)?string["0.#"]} KB<#elseif fSize gt 0>${fSize} B<#else>-</#if></td>
+ <td><span class="badge text-bg-secondary" id="doc-status-${document.id!}">#i18n{platform.agent.jobs.status.pending}</span></td>
+ <td class="text-end text-secondary small" id="doc-updated-${document.id!}">-</td>
+ <td class="text-end">
+ <div class="d-flex align-items-center justify-content-end gap-1">
+ <a href="jsp/site/Portal.jsp?page=agent_dataset&action=doDownloadDocument&dataset_id=${dataset.id!}&document_id=${document.id!}<#if (client_id!)?has_content>&client_id=${client_id!}</#if>"
+ class="btn btn-light" title="#i18n{platform.agent.document.buttonDownload}">
+ <i class="ti ti-download"></i>
+ </a>
+ <a href="jsp/site/Portal.jsp?page=agent_dataset&view=viewSegments&dataset_id=${dataset.id!}&document_id=${document.id!}<#if (client_id!)?has_content>&client_id=${client_id!}</#if>"
+ class="btn btn-light" title="#i18n{platform.agent.document.buttonViewSegments}">
+ <i class="ti ti-eye"></i>
+ </a>
+ <#if (dataset.userCanModify!false)>
+ <a href="jsp/site/Portal.jsp?page=agent_dataset&action=confirmRemoveDocument&dataset_id=${dataset.id!}&document_id=${document.id!}<#if (client_id!)?has_content>&client_id=${client_id!}</#if>"
+ class="btn btn-light"
+ title="#i18n{platform.agent.xpage.action.delete}">
+ <i class="ti ti-trash"></i>
+ </a>
+ </#if>
+ </div>
+ </td>
+ </tr>
+ </#list>
+ </tbody>
+ </table>
+ </div>
+ <#else>
+ <#if !(subfolders!)?has_content>
+ <div class="card w-100">
+  <div class="card-body d-flex flex-column align-items-center justify-content-center py-5 text-center">
+   <i class="ti ti-file-text text-secondary mb-3 fs-1"></i>
+   <p class="fw-semibold mb-1">#i18n{platform.agent.document.noDocument}</p>
+   <#if (dataset.userCanModify!false)>
+   <a href="jsp/site/Portal.jsp?page=agent_dataset&view=createDocument&dataset_id=${dataset.id!}${currentFolderQs}${clientQs}" class="btn btn-primary mt-2">
+    <i class="ti ti-plus me-1"></i>#i18n{platform.agent.document.buttonAdd}
+   </a>
+   </#if>
+  </div>
+ </div>
+ </#if>
+ </#if>
+ </div>
+ </div>
+
+<script type="module">
+ import { DatasetManager } from './js/dataset.js';
+
+ document.addEventListener('DOMContentLoaded', function() {
+ var datasetManager = new DatasetManager(${dataset.id!0}, {
+ i18nTexts: {
+ pending: '#i18n{platform.agent.jobs.status.pending}',
+ processing: '#i18n{platform.agent.jobs.status.processing}',
+ completed: '#i18n{platform.agent.jobs.status.completed}',
+ error: '#i18n{platform.agent.jobs.status.error}'
+ }
+ });
+ datasetManager.init();
+ });
+</script>

@@ -1,0 +1,352 @@
+<#ftl output_format="HTML">
+<#if resource_type! == "BOT">
+<#include "commons/page_header_bot.html">
+<#elseif resource_type! == "PIPELINE">
+<#include "commons/page_header_pipeline.html">
+<#elseif resource_type! == "DATASET">
+<#include "commons/page_header_dataset.html">
+<#elseif resource_type! == "VISION">
+<#include "commons/page_header_vision.html">
+<#elseif resource_type! == "MODEL">
+<#include "commons/page_header_model.html">
+<#elseif resource_type! == "DECISION_TREE">
+<#include "commons/page_header_decision_tree.html">
+</#if>
+
+<div class="d-flex align-items-center justify-content-end mb-4">
+    <form method="get" action="jsp/site/Portal.jsp" class="d-flex align-items-center gap-2">
+        <input type="hidden" name="page" value="agent_observability" />
+        <input type="hidden" name="view" value="resourceObservability" />
+        <input type="hidden" name="resource_type" value="${resource_type!}" />
+        <input type="hidden" name="resource_id" value="${resource_id!}" />
+        <input type="hidden" name="client_id" value="${client_id!}" />
+        <select name="date_range" id="date_range" class="form-select" data-mu-toggle="select">
+            <option value="7days" <#if date_range?? && date_range == "7days">selected</#if>>#i18n{platform.observability.dateRange.7days}</option>
+            <option value="15days" <#if date_range?? && date_range == "15days">selected</#if>>#i18n{platform.observability.dateRange.15days}</option>
+            <option value="month" <#if date_range?? && date_range == "month">selected</#if>>#i18n{platform.observability.dateRange.month}</option>
+            <option value="3months" <#if date_range?? && date_range == "3months">selected</#if>>#i18n{platform.observability.dateRange.3months}</option>
+            <option value="all" <#if date_range?? && date_range == "all">selected</#if>>#i18n{platform.observability.dateRange.all}</option>
+        </select>
+    </form>
+</div>
+
+<#if !executions?? || !executions?has_content>
+    <div class="card w-100">
+        <div class="card-body d-flex flex-column align-items-center justify-content-center py-5 text-center">
+            <i class="ti ti-chart-bar text-secondary mb-3" style="font-size: 3rem;"></i>
+            <p class="fw-semibold mb-1">#i18n{platform.observability.noData.title}</p>
+            <p class="small text-secondary mb-0">#i18n{platform.observability.noData.description}</p>
+        </div>
+    </div>
+<#else>
+
+<#-- KPI Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-secondary small text-truncate">#i18n{platform.observability.kpi.totalExecutions}</span>
+                    <i class="ti ti-activity text-secondary"></i>
+                </div>
+                <p class="h3 fw-bold mb-0 text-truncate">${total_executions}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-secondary small text-truncate">#i18n{platform.observability.kpi.successRate}</span>
+                    <i class="ti ti-circle-check text-secondary"></i>
+                </div>
+                <p class="h3 fw-bold mb-0 text-truncate">${success_rate?string["0.#"]}%</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-secondary small text-truncate">#i18n{platform.observability.kpi.errors}</span>
+                    <i class="ti ti-alert-triangle text-secondary"></i>
+                </div>
+                <p class="h3 fw-bold mb-0 text-truncate">${total_errors}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-secondary small text-truncate">#i18n{platform.observability.kpi.totalCost}</span>
+                    <i class="ti ti-currency-euro text-secondary"></i>
+                </div>
+                <p class="h3 fw-bold mb-0 text-truncate">${total_cost?string["0.####"]}&euro;</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-secondary small text-truncate">#i18n{platform.observability.kpi.avgDuration}</span>
+                    <i class="ti ti-clock text-secondary"></i>
+                </div>
+                <p class="h3 fw-bold mb-0 text-truncate"><#if avg_duration lt 1>${(avg_duration * 1000)?string["0"]}ms<#elseif avg_duration lt 60>${avg_duration?string["0.#"]}s<#else>${(avg_duration / 60)?int}m ${(avg_duration % 60)?int}s</#if></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<#-- Charts -->
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h6 class="fw-semibold mb-0">#i18n{platform.observability.chart.executionsPerDay}</h6>
+                    <button type="button" id="execChartReset" class="btn btn-sm btn-light d-none"><i class="ti ti-zoom-reset"></i></button>
+                </div>
+                <div style="height: 220px;">
+                    <canvas id="execChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h6 class="fw-semibold mb-0">#i18n{platform.observability.chart.costPerDay}</h6>
+                    <button type="button" id="costChartReset" class="btn btn-sm btn-light d-none"><i class="ti ti-zoom-reset"></i></button>
+                </div>
+                <div style="height: 220px;">
+                    <canvas id="costChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<#-- Executions table -->
+<div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+        <thead>
+            <tr>
+                <th>#i18n{platform.observability.table.resource}</th>
+                <th>#i18n{platform.observability.table.duration}</th>
+                <th>#i18n{platform.observability.kpi.totalCost}</th>
+                <th class="text-end">#i18n{platform.observability.table.start}</th>
+                <th>#i18n{platform.observability.table.status}</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            <#list executions as execution>
+            <#assign execResourceItem = (metrics.resourceItems[execution.resourceType][execution.resourceId])!>
+            <#assign resourceName = execResourceItem.name!(execution.resourceName!execution.resourceId)>
+            <#assign statusBadge = "secondary">
+            <#assign statusLabel = execution.status.value>
+            <#switch execution.status.value>
+                <#case "COMPLETED"><#assign statusBadge = "success"><#assign statusLabel = "#i18n{platform.observability.status.completed}"><#break>
+                <#case "ERROR"><#assign statusBadge = "danger"><#assign statusLabel = "#i18n{platform.observability.status.error}"><#break>
+                <#case "PENDING"><#assign statusBadge = "warning"><#assign statusLabel = "#i18n{platform.observability.status.pending}"><#break>
+                <#case "RUNNING"><#assign statusBadge = "primary"><#assign statusLabel = "#i18n{platform.observability.status.running}"><#break>
+                <#case "CANCELLED"><#assign statusBadge = "secondary"><#assign statusLabel = "#i18n{platform.observability.status.cancelled}"><#break>
+            </#switch>
+            <tr>
+                <td><span class="fw-medium">${resourceName}</span></td>
+                <td class="text-secondary small"><#if execution.endTime?? && execution.startTime??><#assign durationMs = (execution.endTime?long - execution.startTime?long) /><#if durationMs < 1000>${durationMs}ms<#elseif durationMs < 60000>${(durationMs/1000)?string("0.#")}s<#else>${(durationMs/60000)?int}m ${((durationMs%60000)/1000)?int}s</#if><#else>-</#if></td>
+                <td class="text-secondary small">${execution.totalCost!0} &euro;</td>
+                <td class="text-end text-secondary small">${execution.startTime?string("dd/MM/yyyy HH:mm")}</td>
+                <td><span class="badge text-bg-${statusBadge}">${statusLabel}</span></td>
+                <td class="text-end">
+                    <a href="jsp/site/Portal.jsp?page=agent_observability&view=executionDetails&client_id=${client_id!}&execution_id=${execution.executionId}&resource_type=${resource_type!}&resource_id=${resource_id!}" class="btn btn-light">
+                        <i class="ti ti-eye"></i>
+                    </a>
+                </td>
+            </tr>
+            </#list>
+        </tbody>
+    </table>
+</div>
+
+<#if paginator?? && (paginator.pagesCount > 1)>
+<nav class="mt-4">
+    <ul class="pagination justify-content-center">
+        <li class="page-item<#if (paginator.pageCurrent == 1)> disabled</#if>">
+            <a class="page-link" href="${paginator.firstPageLink}"><i class="ti ti-chevrons-left"></i></a>
+        </li>
+        <li class="page-item<#if (paginator.pageCurrent == 1)> disabled</#if>">
+            <a class="page-link" href="${paginator.previousPageLink}"><i class="ti ti-chevron-left"></i></a>
+        </li>
+        <#list paginator.pagesLinks as page>
+        <li class="page-item<#if page.index == paginator.pageCurrent> active</#if>">
+            <a class="page-link" href="${page.url}">${page.name}</a>
+        </li>
+        </#list>
+        <li class="page-item<#if (paginator.pageCurrent == paginator.pagesCount)> disabled</#if>">
+            <a class="page-link" href="${paginator.nextPageLink}"><i class="ti ti-chevron-right"></i></a>
+        </li>
+        <li class="page-item<#if (paginator.pageCurrent == paginator.pagesCount)> disabled</#if>">
+            <a class="page-link" href="${paginator.lastPageLink}"><i class="ti ti-chevrons-right"></i></a>
+        </li>
+    </ul>
+</nav>
+</#if>
+
+</#if>
+
+<script src="js/chart.umd.min.js"></script>
+<script src="js/chartjs-adapter-date-fns.bundle.min.js"></script>
+<script src="js/hammer.min.js"></script>
+<script src="js/chartjs-plugin-zoom.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('date_range').addEventListener('change', function() {
+        this.form.submit();
+    });
+
+    var dailyData = ${daily_stats_json?no_esc};
+    if (!dailyData || !dailyData.length) return;
+
+    function cssVar(name) {
+        return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    }
+
+    function isDark() {
+        return document.documentElement.getAttribute('data-bs-theme') === 'dark';
+    }
+
+    function themeColors() {
+        var primaryRgb = cssVar('--bs-primary-rgb');
+        var infoRgb = cssVar('--bs-info-rgb');
+        return {
+            primary: 'rgb(' + primaryRgb + ')',
+            primaryFill: 'rgba(' + primaryRgb + ', 0.1)',
+            info: 'rgb(' + infoRgb + ')',
+            infoFill: 'rgba(' + infoRgb + ', 0.1)',
+            tick: cssVar('--bs-secondary-color'),
+            grid: cssVar('--bs-border-color')
+        };
+    }
+
+    function applyTheme(chart, colorKey) {
+        var c = themeColors();
+        chart.options.scales.x.ticks.color = c.tick;
+        chart.options.scales.x.grid.color = 'transparent';
+        chart.options.scales.y.ticks.color = c.tick;
+        chart.options.scales.y.grid.color = c.grid;
+        chart.data.datasets.forEach(function(ds) {
+            ds.borderColor = c[colorKey];
+            ds.backgroundColor = c[colorKey + 'Fill'];
+        });
+        chart.update();
+    }
+
+    function watchTheme(chart, colorKey) {
+        new MutationObserver(function() { applyTheme(chart, colorKey); })
+            .observe(document.documentElement, { attributes: true, attributeFilter: ['data-bs-theme'] });
+    }
+
+    var crosshairPlugin = {
+        id: 'crosshair',
+        afterDraw: function(chart) {
+            if (chart.tooltip && chart.tooltip.opacity > 0) {
+                var x = chart.tooltip.caretX;
+                var ctx = chart.ctx;
+                var yAxis = chart.scales.y;
+                ctx.save();
+                ctx.beginPath();
+                ctx.moveTo(x, yAxis.top);
+                ctx.lineTo(x, yAxis.bottom);
+                ctx.lineWidth = 1;
+                ctx.strokeStyle = cssVar('--bs-secondary-color');
+                ctx.setLineDash([4, 4]);
+                ctx.stroke();
+                ctx.restore();
+            }
+        }
+    };
+
+    var tc = themeColors();
+    var timeScaleOpts = {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+            legend: { display: false },
+            tooltip: { mode: 'index', intersect: false },
+            zoom: {
+                zoom: {
+                    drag: { enabled: true, backgroundColor: 'rgba(var(--bs-info-rgb), 0.15)', borderColor: 'rgba(var(--bs-info-rgb), 0.5)', borderWidth: 1 },
+                    mode: 'x'
+                }
+            }
+        },
+        scales: {
+            x: {
+                type: 'time',
+                time: { unit: 'day', tooltipFormat: 'dd/MM/yyyy', displayFormats: { day: 'dd/MM', week: 'dd/MM', month: 'MMM yy' } },
+                border: { display: false },
+                grid: { display: false },
+                ticks: { maxTicksLimit: 12, color: tc.tick }
+            },
+            y: { border: { display: false }, grid: { drawTicks: false, color: tc.grid }, ticks: { padding: 8, color: tc.tick } }
+        }
+    };
+
+    var execCanvas = document.getElementById('execChart');
+    if (execCanvas) {
+        var execChart = new Chart(execCanvas, {
+            type: 'line',
+            data: {
+                datasets: [{
+                    data: dailyData.map(function(d) { return { x: d.day, y: d.count }; }),
+                    tension: 0.3,
+                    pointRadius: 2,
+                    borderWidth: 2,
+                    fill: true,
+                    borderColor: tc.info,
+                    backgroundColor: tc.infoFill
+                }]
+            },
+            options: timeScaleOpts,
+            plugins: [crosshairPlugin]
+        });
+        watchTheme(execChart, 'info');
+        var execResetBtn = document.getElementById('execChartReset');
+        execCanvas.addEventListener('dblclick', function() { execChart.resetZoom(); execResetBtn.classList.add('d-none'); });
+        execResetBtn.addEventListener('click', function() { execChart.resetZoom(); execResetBtn.classList.add('d-none'); });
+        execChart.options.plugins.zoom.zoom.onZoomComplete = function() { execResetBtn.classList.remove('d-none'); };
+    }
+
+    var costCanvas = document.getElementById('costChart');
+    if (costCanvas) {
+        var costOpts = JSON.parse(JSON.stringify(timeScaleOpts));
+        costOpts.scales.y.ticks = { padding: 8, color: tc.tick, callback: function(v) { return v.toFixed(4) + '\u20ac'; } };
+        var costChart = new Chart(costCanvas, {
+            type: 'line',
+            data: {
+                datasets: [{
+                    data: dailyData.map(function(d) { return { x: d.day, y: d.cost }; }),
+                    tension: 0.3,
+                    pointRadius: 2,
+                    borderWidth: 2,
+                    fill: true,
+                    borderColor: tc.info,
+                    backgroundColor: tc.infoFill
+                }]
+            },
+            options: costOpts,
+            plugins: [crosshairPlugin]
+        });
+        watchTheme(costChart, 'info');
+        var costResetBtn = document.getElementById('costChartReset');
+        costCanvas.addEventListener('dblclick', function() { costChart.resetZoom(); costResetBtn.classList.add('d-none'); });
+        costResetBtn.addEventListener('click', function() { costChart.resetZoom(); costResetBtn.classList.add('d-none'); });
+        costChart.options.plugins.zoom.zoom.onZoomComplete = function() { costResetBtn.classList.remove('d-none'); };
+    }
+});
+</script>

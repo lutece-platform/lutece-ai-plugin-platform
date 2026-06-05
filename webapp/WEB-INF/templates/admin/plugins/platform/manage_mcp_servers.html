@@ -1,0 +1,68 @@
+<@pageContainer>
+    <@pageColumn>
+        <@pageHeader title='#i18n{platform.agent.manage_mcp_servers.pageTitle}'>
+            <@aButton
+                href='jsp/admin/plugins/platform/ManageAgentMcpServers.jsp?view=createMcpServer'
+                buttonIcon='plus'
+                title='#i18n{platform.agent.manage_mcp_servers.buttonAdd}'
+                size=''
+            />
+        </@pageHeader>
+
+        <@messages infos=infos warnings=warnings errors=errors />
+
+        <@table>
+            <@tr>
+                <@th>#i18n{platform.agent.model.entity.mcpServer.attribute.id}</@th>
+                <@th>#i18n{platform.agent.model.entity.mcpServer.attribute.name}</@th>
+                <@th>#i18n{platform.agent.model.entity.mcpServer.attribute.transportType}</@th>
+                <@th>#i18n{platform.agent.model.entity.mcpServer.attribute.url}</@th>
+                <@th>#i18n{platform.agent.model.entity.mcpServer.attribute.enabled}</@th>
+                <@th>#i18n{platform.agent.manage_mcp_servers.columnActions}</@th>
+            </@tr>
+
+            <#if mcp_server_list?? && mcp_server_list?size gt 0>
+                <#list mcp_server_list as server>
+                    <@tr>
+                        <@td>${server.id}</@td>
+                        <@td>${server.name!}</@td>
+                        <@td>${server.transportType!}</@td>
+                        <@td>${server.url!}</@td>
+                        <@td>
+                            <#if server.enabled>
+                                <span class="badge bg-success">#i18n{platform.agent.manage_mcp_servers.statusEnabled}</span>
+                            <#else>
+                                <span class="badge bg-secondary">#i18n{platform.agent.manage_mcp_servers.statusDisabled}</span>
+                            </#if>
+                        </@td>
+                        <@td>
+                            <@aButton
+                                href='jsp/admin/plugins/platform/ManageAgentMcpServers.jsp?view=modifyMcpServer&mcp_server_id=${server.id}'
+                                buttonIcon='edit'
+                                title='#i18n{platform.agent.manage_mcp_servers.buttonModify}'
+                                size='sm'
+                            />
+                            <@aButton
+                                href='jsp/admin/plugins/platform/ManageAgentMcpServers.jsp?action=confirmRemoveMcpServer&mcp_server_id=${server.id}'
+                                buttonIcon='trash'
+                                title='#i18n{platform.agent.manage_mcp_servers.buttonDelete}'
+                                color='danger'
+                                size='sm'
+                            />
+                        </@td>
+                    </@tr>
+                </#list>
+            <#else>
+                <@tr>
+                    <@td colspan=6 align="center">
+                        <@empty
+                            iconName="plug-off"
+                            title="#i18n{platform.agent.manage_mcp_servers.noServer}"
+                            subtitle=""
+                        />
+                    </@td>
+                </@tr>
+            </#if>
+        </@table>
+    </@pageColumn>
+</@pageContainer>

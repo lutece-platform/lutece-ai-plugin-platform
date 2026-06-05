@@ -1,0 +1,43 @@
+<@pageContainer>
+<@pageColumn>
+  <@pageHeader title='#i18n{platform.manage_config_resources.title}' description='#i18n{platform.manage_config_resources.description}' />
+  <@messages infos=infos />
+  <@messages errors=errors />
+  <@messages warnings=warnings />
+  <@table headBody=true>
+    <@tr>
+      <@th>#i18n{platform.manage_config_resources.column.name}</@th>
+      <@th>#i18n{platform.manage_config_resources.column.description}</@th>
+      <@th>#i18n{platform.manage_config_resources.column.resourceType}</@th>
+      <@th class="text-end">#i18n{platform.manage_config_resources.column.actions}</@th>
+    </@tr>
+    <@tableHeadBodySeparator />
+    <#assign hasItems = false>
+    <#if config_lists_by_type?? && config_lists_by_type?size gt 0>
+      <#list resource_type_list as resource_type>
+        <#if config_lists_by_type[resource_type.resourceType]??>
+          <#list config_lists_by_type[resource_type.resourceType] as config_item>
+            <#assign hasItems = true>
+            <@tr>
+              <@td>${config_item.name!}</@td>
+              <@td>${config_item.description!}</@td>
+              <@td>#i18n{${resource_type.nameKey!}}</@td>
+              <@td class="text-end">
+                <@aButton href="${config_item.url!}" color="primary" size="sm" 
+                  buttonIcon="wrench" title='#i18n{platform.manage_config_resources.action.configure}'/>
+              </@td>
+            </@tr>
+          </#list>
+        </#if>
+      </#list>
+    </#if>
+    <#if !hasItems>
+      <@tr>
+        <@td colspan=4>
+          <@empty title='#i18n{platform.manage_config_resources.noItem}' />
+        </@td>
+      </@tr>
+    </#if>
+  </@table>
+</@pageColumn>
+</@pageContainer>

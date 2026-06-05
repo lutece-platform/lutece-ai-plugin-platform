@@ -1,0 +1,337 @@
+<#ftl output_format="HTML">
+
+<#-- Header -->
+<div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4">
+ <div>
+ <a href="jsp/site/Portal.jsp?page=agent_decisiontree&view=modifyDecisionTree&tree_id=${tree_id!}&client_id=${client_id!}" class="small text-secondary text-decoration-none d-flex align-items-center gap-1 mb-2">
+ <i class="ti ti-arrow-left"></i>#i18n{platform.agent.decision_node.backToTree}
+ </a>
+ <h1 class="fw-bold mb-1">${decision_node.nodeTitle!}</h1>
+ <p class="text-secondary mb-0">#i18n{platform.agent.modify_decision_node.subtitle}</p>
+ </div>
+</div>
+
+<#assign transitionCount = (decision_transitions??)?then(decision_transitions?size, 0)>
+<#assign isAutoTransition = (transitionCount == 1) && !(decision_transitions[0].label?? && decision_transitions[0].label?has_content)>
+
+<div class="row g-3">
+<#-- ===== Left: Node Properties ===== -->
+<div class="col-md-8">
+<form method="post" action="jsp/site/Portal.jsp" id="form_node">
+<input type="hidden" name="page" value="agent_decisiontree">
+<input type="hidden" name="action" value="doModifyDecisionNode">
+<input type="hidden" name="node_id" value="${decision_node.id}">
+<input type="hidden" name="tree_id" value="${tree_id!}">
+<input type="hidden" name="client_id" value="${client_id!}">
+<div class="card">
+<div class="card-header"><h5 class="card-title mb-0"><i class="ti ti-settings me-2"></i>#i18n{platform.agent.decision_node.section.properties}</h5></div>
+<div class="card-body">
+<div class="row g-3">
+<div class="col-12">
+<label for="node_title" class="form-label">#i18n{platform.agent.model.entity.decisionNode.attribute.nodeTitle} *</label>
+<input type="text" class="form-control" id="node_title" name="node_title" value="${decision_node.nodeTitle!}" required>
+</div>
+<div class="col-12">
+<label class="form-label">#i18n{platform.agent.decision_node.field.text}</label>
+<input type="hidden" name="show_back_button" id="show_back_button_hidden" value="<#if decision_node.showBackButton!false>on</#if>">
+<input type="hidden" name="back_target_node_id" id="back_target_node_id_hidden" value="${(decision_node.backTargetNodeId?c)!}">
+<input type="hidden" name="content_text" id="content_text_hidden" value="${decision_node.content!}">
+<div id="editor_content"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="d-flex justify-content-end gap-2 mt-3">
+<button type="submit" class="btn btn-primary">
+<i class="ti ti-device-floppy me-1"></i>#i18n{platform.agent.xpage.action.save}
+</button>
+</div>
+</form>
+</div>
+
+<#-- ===== Right: Transitions ===== -->
+<div class="col-md-4">
+<div class="card">
+<div class="card-header d-flex align-items-center justify-content-between">
+<h5 class="card-title mb-0"><i class="ti ti-arrows-split me-2"></i>#i18n{platform.agent.decision_node.section.transitions}</h5>
+<button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modal_add_transition">
+<i class="ti ti-plus"></i>
+</button>
+</div>
+<div class="card-body p-0">
+<#-- Auto-transition toggle: only when exactly 1 transition -->
+<#if transitionCount == 1>
+<div class="px-3 py-2 border-bottom">
+<form method="post" action="jsp/site/Portal.jsp" id="form_auto_transition">
+<input type="hidden" name="page" value="agent_decisiontree">
+<input type="hidden" name="action" value="doModifyDecisionTransition">
+<input type="hidden" name="transition_id" value="${decision_transitions[0].id}">
+<input type="hidden" name="node_id" value="${decision_node.id}">
+<input type="hidden" name="tree_id" value="${tree_id!}">
+<input type="hidden" name="client_id" value="${client_id!}">
+<input type="hidden" name="target_node_id" value="${decision_transitions[0].targetNodeId}">
+<input type="hidden" name="label" id="auto_transition_label" value="${decision_transitions[0].label!}">
+<div class="form-check form-switch">
+<input class="form-check-input" type="checkbox" id="auto_transition_toggle" <#if isAutoTransition>checked</#if>>
+<label class="form-check-label" for="auto_transition_toggle">#i18n{platform.agent.decision_node.autoTransition}</label>
+</div>
+</form>
+</div>
+</#if>
+<#if decision_transitions?? && decision_transitions?has_content>
+<div class="list-group list-group-flush">
+<#list decision_transitions as transition>
+<div class="list-group-item">
+<div class="d-flex align-items-center justify-content-between">
+<div class="flex-grow-1">
+<#if transition.label?? && transition.label?has_content>
+<div class="fw-semibold">${transition.label}</div>
+<#else>
+<div class="fw-semibold text-secondary fst-italic">#i18n{platform.agent.decision_node.autoTransitionLabel}</div>
+</#if>
+<div class="text-secondary small d-flex align-items-center gap-1">
+<i class="ti ti-arrow-right"></i>
+<#assign targetName = "?">
+<#if all_nodes?? && all_nodes?has_content>
+<#list all_nodes as node>
+<#if node.id == transition.targetNodeId><#assign targetName = node.nodeTitle!></#if>
+</#list>
+</#if>
+${targetName}
+</div>
+</div>
+<div class="d-flex align-items-center gap-1">
+<#if !transition?is_first>
+<a href="jsp/site/Portal.jsp?page=agent_decisiontree&action=doMoveTransitionUp&transition_id=${transition.id}&node_id=${decision_node.id}&client_id=${client_id!}" class="btn btn-sm btn-link text-secondary px-0" title="#i18n{platform.agent.xpage.action.moveUp}"><i class="ti ti-arrow-up"></i></a>
+</#if>
+<#if transition?has_next>
+<a href="jsp/site/Portal.jsp?page=agent_decisiontree&action=doMoveTransitionDown&transition_id=${transition.id}&node_id=${decision_node.id}&client_id=${client_id!}" class="btn btn-sm btn-link text-secondary px-0" title="#i18n{platform.agent.xpage.action.moveDown}"><i class="ti ti-arrow-down"></i></a>
+</#if>
+<div class="dropdown">
+<button class="btn btn-sm btn-link text-secondary px-0" type="button" data-bs-toggle="dropdown"><i class="ti ti-dots-vertical"></i></button>
+<ul class="dropdown-menu dropdown-menu-end">
+<li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#modal_edit_transition_${transition.id}"><i class="ti ti-pencil me-2"></i>#i18n{platform.agent.xpage.action.edit}</a></li>
+<li><hr class="dropdown-divider"></li>
+<li><form method="post" action="jsp/site/Portal.jsp">
+<input type="hidden" name="page" value="agent_decisiontree">
+<input type="hidden" name="action" value="doRemoveDecisionTransition">
+<input type="hidden" name="transition_id" value="${transition.id}">
+<input type="hidden" name="node_id" value="${decision_node.id}">
+<input type="hidden" name="tree_id" value="${tree_id!}">
+<input type="hidden" name="client_id" value="${client_id!}">
+<button type="submit" class="dropdown-item" onclick="return confirm('#i18n{platform.agent.decision_node.message.confirmRemoveTransition}')"><i class="ti ti-trash me-2"></i>#i18n{platform.agent.xpage.action.delete}</button>
+</form></li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+</#list>
+</div>
+<#else>
+<div class="text-center py-4 text-secondary">
+<i class="ti ti-arrows-split" style="font-size: 2rem;"></i>
+<p class="mt-2 mb-0">#i18n{platform.agent.decision_node.noTransitions}</p>
+</div>
+</#if>
+</div>
+<#if transitionCount gt 0>
+<div class="card-footer">
+<div class="form-check form-switch mb-0">
+<input class="form-check-input" type="checkbox" id="show_back_button" <#if decision_node.showBackButton!false>checked</#if>>
+<label class="form-check-label" for="show_back_button">#i18n{platform.agent.model.entity.decisionNode.attribute.showBackButton}</label>
+</div>
+<div id="back_target_container" class="mt-2" <#if !(decision_node.showBackButton!false)>style="display:none"</#if>>
+<label for="back_target_select" class="form-label small">#i18n{platform.agent.decision_node.field.backTargetNode}</label>
+<select class="form-select form-select-sm" id="back_target_select" data-mu-toggle="select">
+<option value="">#i18n{platform.agent.decision_node.backTargetNode.previousNode}</option>
+<#if all_nodes?? && all_nodes?has_content>
+<#list all_nodes as node>
+<#if node.id != decision_node.id>
+<option value="${node.id}" <#if (decision_node.backTargetNodeId!0) == node.id>selected</#if>>${node.nodeTitle!}</option>
+</#if>
+</#list>
+</#if>
+</select>
+</div>
+</div>
+</#if>
+</div>
+</div>
+</div>
+
+<#-- ===== Modal: Add Transition ===== -->
+<div class="modal fade" id="modal_add_transition" tabindex="-1">
+<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+<div class="modal-content">
+<div class="modal-header">
+<h1 class="modal-title fs-3">#i18n{platform.agent.decision_node.addTransition}</h1>
+<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+<div class="modal-body">
+<form method="post" action="jsp/site/Portal.jsp" id="form_add_transition">
+<input type="hidden" name="page" value="agent_decisiontree">
+<input type="hidden" name="action" value="doCreateDecisionTransition">
+<input type="hidden" name="node_id" value="${decision_node.id}">
+<input type="hidden" name="tree_id" value="${tree_id!}">
+<input type="hidden" name="client_id" value="${client_id!}">
+<div class="row g-3">
+<div class="col-12">
+<label for="transition_label" class="form-label">#i18n{platform.agent.model.entity.decisionTransition.attribute.label} *</label>
+<input type="text" class="form-control" id="transition_label" name="label" required>
+</div>
+<div class="col-12">
+<label for="target_node_id" class="form-label">#i18n{platform.agent.model.entity.decisionTransition.attribute.targetNode} *</label>
+<select class="form-select" id="target_node_id" name="target_node_id" data-mu-toggle="select" required>
+<option value="">#i18n{platform.agent.decision_node.selectTargetNode}</option>
+<#if all_nodes?? && all_nodes?has_content>
+<#list all_nodes as node>
+<#if node.id != decision_node.id>
+<option value="${node.id}">${node.nodeTitle!}</option>
+</#if>
+</#list>
+</#if>
+</select>
+</div>
+</div>
+</form>
+</div>
+<div class="modal-footer">
+<button type="button" class="btn btn-light" data-bs-dismiss="modal">#i18n{platform.agent.xpage.action.cancel}</button>
+<button type="submit" form="form_add_transition" class="btn btn-primary">
+<i class="ti ti-plus me-1"></i>#i18n{platform.agent.decision_node.action.addTransition}
+</button>
+</div>
+</div>
+</div>
+</div>
+
+<#-- ===== Modals: Edit Transitions ===== -->
+<#if decision_transitions?? && decision_transitions?has_content>
+<#list decision_transitions as transition>
+<div class="modal fade" id="modal_edit_transition_${transition.id}" tabindex="-1">
+<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+<div class="modal-content">
+<div class="modal-header">
+<h1 class="modal-title fs-3">#i18n{platform.agent.decision_node.editTransition}</h1>
+<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+<div class="modal-body">
+<form method="post" action="jsp/site/Portal.jsp" id="form_edit_transition_${transition.id}">
+<input type="hidden" name="page" value="agent_decisiontree">
+<input type="hidden" name="action" value="doModifyDecisionTransition">
+<input type="hidden" name="transition_id" value="${transition.id}">
+<input type="hidden" name="node_id" value="${decision_node.id}">
+<input type="hidden" name="tree_id" value="${tree_id!}">
+<input type="hidden" name="client_id" value="${client_id!}">
+<div class="row g-3">
+<div class="col-12">
+<label class="form-label">#i18n{platform.agent.model.entity.decisionTransition.attribute.label} *</label>
+<input type="text" class="form-control" name="label" value="${transition.label!}" required>
+</div>
+<div class="col-12">
+<label class="form-label">#i18n{platform.agent.model.entity.decisionTransition.attribute.targetNode} *</label>
+<select class="form-select" name="target_node_id" data-mu-toggle="select" required>
+<option value="">#i18n{platform.agent.decision_node.selectTargetNode}</option>
+<#if all_nodes?? && all_nodes?has_content>
+<#list all_nodes as node>
+<#if node.id != decision_node.id>
+<option value="${node.id}" <#if node.id == transition.targetNodeId>selected</#if>>${node.nodeTitle!}</option>
+</#if>
+</#list>
+</#if>
+</select>
+</div>
+</div>
+</form>
+</div>
+<div class="modal-footer">
+<button type="button" class="btn btn-light" data-bs-dismiss="modal">#i18n{platform.agent.xpage.action.cancel}</button>
+<button type="submit" form="form_edit_transition_${transition.id}" class="btn btn-primary">
+<i class="ti ti-device-floppy me-1"></i>#i18n{platform.agent.xpage.action.save}
+</button>
+</div>
+</div>
+</div>
+</div>
+</#list>
+</#if>
+
+<link rel="stylesheet" href="css/milkdown-editor.css">
+<script src="js/milkdown-editor.umd.js"></script>
+<script>
+(function() {
+ const TREE_ID = '${tree_id!}';
+ const UPLOAD_URL = 'rest/platform/agent/admin/decisiontrees/' + TREE_ID + '/images';
+ const IMAGE_SCHEME = 'lutece-image:';
+ const IMAGE_SERVE_PATH = 'rest/decisiontree/images/';
+
+ const fileToBase64 = (file) => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.onload = () => resolve(reader.result);
+  reader.onerror = () => reject(reader.error);
+  reader.readAsDataURL(file);
+ });
+
+ const uploadImage = async (file) => {
+  const content = await fileToBase64(file);
+  const resp = await fetch(UPLOAD_URL, {
+   method: 'POST',
+   headers: { 'Content-Type': 'application/json' },
+   body: JSON.stringify({ content, mimeType: file.type })
+  });
+  if (!resp.ok) throw new Error("#i18n{platform.modify_decision_node.js.uploadFailed}" + resp.status + ')');
+  const payload = await resp.json();
+  const marker = payload && payload.result ? payload.result.marker : null;
+  if (!marker) throw new Error("#i18n{platform.modify_decision_node.js.invalidUploadResponse}");
+  return marker;
+ };
+
+ const resolveImageUrl = (url) => {
+  if (url && url.startsWith(IMAGE_SCHEME)) return IMAGE_SERVE_PATH + url.slice(IMAGE_SCHEME.length);
+  return url;
+ };
+
+ let contentEditor = null;
+ MilkdownEditor.createEditor({
+  root: '#editor_content',
+  defaultValue: document.getElementById('content_text_hidden').value,
+  onImageUpload: uploadImage,
+  imageUrlResolver: resolveImageUrl
+ }).then((editor) => { contentEditor = editor; });
+
+ document.getElementById('form_node').addEventListener('submit', () => {
+  if (contentEditor) document.getElementById('content_text_hidden').value = contentEditor.getMarkdown();
+  const showBack = document.getElementById('show_back_button').checked;
+  document.getElementById('show_back_button_hidden').value = showBack ? 'on' : '';
+  const backSelect = document.getElementById('back_target_select');
+  document.getElementById('back_target_node_id_hidden').value = showBack && backSelect ? backSelect.value : '';
+ });
+
+ var showBackCheckbox = document.getElementById('show_back_button');
+ var backTargetContainer = document.getElementById('back_target_container');
+ if (showBackCheckbox && backTargetContainer) {
+  showBackCheckbox.addEventListener('change', function() {
+   backTargetContainer.style.display = this.checked ? '' : 'none';
+  });
+ }
+})();
+
+// Auto-transition toggle (only exists when exactly 1 transition)
+var autoToggle = document.getElementById('auto_transition_toggle');
+if (autoToggle) {
+ autoToggle.addEventListener('change', function() {
+  if (this.checked) {
+   document.getElementById('auto_transition_label').value = '';
+  } else {
+   document.getElementById('auto_transition_label').value = '';
+   // Open edit modal so user can set a label
+   var form = document.getElementById('form_auto_transition');
+   var transitionId = form.querySelector('[name="transition_id"]').value;
+   var modal = document.getElementById('modal_edit_transition_' + transitionId);
+   if (modal) { new bootstrap.Modal(modal).show(); return; }
+  }
+  document.getElementById('form_auto_transition').submit();
+ });
+}
+</script>

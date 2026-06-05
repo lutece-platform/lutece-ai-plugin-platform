@@ -1,0 +1,391 @@
+<#ftl output_format="HTML">
+<#include "commons/page_header_decision_tree.html">
+
+ <#-- ===== Edit Tree Metadata Modal ===== -->
+ <div class="modal fade" id="modal_edit_tree" tabindex="-1">
+ <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+ <div class="modal-content">
+ <div class="modal-header">
+ <h1 class="modal-title fs-3">#i18n{platform.agent.decision_tree.section.generalConfiguration}</h1>
+ <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+ </div>
+ <div class="modal-body">
+ <form method="post" action="jsp/site/Portal.jsp" id="form_edit_tree">
+ <input type="hidden" name="page" value="agent_decisiontree">
+ <input type="hidden" name="action" value="doModifyDecisionTree">
+ <input type="hidden" name="tree_id" value="${decision_tree.id}">
+ <input type="hidden" name="client_id" value="${client_id!}">
+ <input type="hidden" name="logo_base64" id="logo_base64" value="${decision_tree.logoBase64!}">
+ <div class="row g-3">
+ <div class="col-12">
+ <label for="tree_name" class="form-label">#i18n{platform.agent.model.entity.decisionTree.attribute.treeName} *</label>
+ <input type="text" class="form-control" id="tree_name" name="tree_name" value="${decision_tree.treeName!}" required>
+ </div>
+ <div class="col-12">
+ <label class="form-label">#i18n{platform.agent.model.entity.decisionTree.attribute.treeDescription}</label>
+ <textarea class="form-control" name="tree_description" rows="3">${decision_tree.treeDescription!}</textarea>
+ </div>
+ <div class="col-12">
+ <label for="logo_file" class="form-label">#i18n{platform.agent.model.entity.bot.attribute.logo}</label>
+ <input type="file" class="form-control" id="logo_file" name="logo_file" accept="image/*">
+ <div class="form-text">#i18n{platform.agent.modify_bot.logoHelp}</div>
+ <div id="logo_preview" class="mt-2 <#if !(decision_tree.logoBase64!"")?has_content>d-none</#if> d-flex align-items-center gap-2">
+ <img id="logo_preview_img" src="${decision_tree.logoBase64!}" alt="#i18n{platform.modify_decision_tree.logo.alt}" class="rounded-circle object-fit-cover" style="width:48px;height:48px">
+ <button type="button" class="btn btn-light" id="remove_logo"><i class="ti ti-trash"></i></button>
+ </div>
+ </div>
+ <div class="col-12">
+ <label class="form-label">#i18n{platform.agent.model.entity.decisionTree.attribute.welcomeMessage}</label>
+ <input type="hidden" name="welcome_message" id="welcome_message_hidden" value="${decision_tree.welcomeMessage!}">
+ <div id="editor_welcome_message" ></div>
+ </div>
+ <div class="col-12">
+ <label class="form-label">#i18n{platform.agent.model.entity.decisionTree.attribute.endMessage}</label>
+ <input type="hidden" name="end_message" id="end_message_hidden" value="${decision_tree.endMessage!}">
+ <div id="editor_end_message" ></div>
+ </div>
+ </div>
+ </form>
+ </div>
+ <div class="modal-footer">
+ <button type="button" class="btn btn-light" data-bs-dismiss="modal">#i18n{platform.agent.xpage.action.cancel}</button>
+ <#if decision_tree.userCanModify!false>
+ <button type="submit" form="form_edit_tree" class="btn btn-primary">
+ <i class="ti ti-device-floppy me-1"></i>#i18n{platform.agent.xpage.action.save}
+ </button>
+ </#if>
+ </div>
+ </div>
+ </div>
+ </div>
+
+ <#-- ===== Macro: render a node row ===== -->
+ <#macro nodeRow node expanded=true collapseId="">
+ <div class="py-2">
+ <div class="d-flex align-items-center gap-2">
+ <#local hasChildren = node.transitions?? && node.transitions?has_content>
+ <#if hasChildren>
+ <a class="text-secondary text-decoration-none<#if !expanded> collapsed</#if>" data-bs-toggle="collapse" href="#${collapseId}" role="button" aria-expanded="${expanded?string('true','false')}">
+ <i class="ti ti-chevron-<#if expanded>down<#else>right</#if>"></i>
+ </a>
+ <#else>
+ <span class="d-inline-block" style="width: 20px;"></span>
+ </#if>
+ <#if !hasChildren><span class="badge bg-danger">#i18n{platform.decision_tree_conversations.node.end}</span></#if>
+ <#if hasChildren>
+ <a class="fw-medium text-decoration-none text-body" role="button" data-bs-toggle="collapse" href="#${collapseId}">${node.nodeTitle!}</a>
+ <#else>
+ <span class="fw-medium">${node.nodeTitle!}</span>
+ </#if>
+ <div class="dropdown">
+ <button class="btn btn-sm btn-link text-secondary px-0" type="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="ti ti-dots-vertical"></i></button>
+ <ul class="dropdown-menu">
+ <#if decision_tree.userCanModify!false>
+ <li><a class="dropdown-item" href="jsp/site/Portal.jsp?page=agent_decisiontree&view=modifyDecisionNode&node_id=${node.id}&tree_id=${decision_tree.id}&client_id=${client_id!}"><i class="ti ti-pencil me-2"></i>#i18n{platform.agent.xpage.action.edit}</a></li>
+ </#if>
+ <#if decision_tree.userCanDelete!false>
+ <li><hr class="dropdown-divider"></li>
+ <li>
+ <form method="post" action="jsp/site/Portal.jsp">
+ <input type="hidden" name="page" value="agent_decisiontree">
+ <input type="hidden" name="action" value="confirmRemoveDecisionNode">
+ <input type="hidden" name="node_id" value="${node.id}">
+ <input type="hidden" name="tree_id" value="${decision_tree.id}">
+ <input type="hidden" name="client_id" value="${client_id!}">
+ <button type="submit" class="dropdown-item"><i class="ti ti-trash me-2"></i>#i18n{platform.agent.xpage.action.delete}</button>
+ </form>
+ </li>
+ </#if>
+ </ul>
+ </div>
+ </div>
+ <#if (node.content!"")?has_content>
+ <div class="small text-secondary ms-4 ps-1 mu-md-content">${node.content}</div>
+ <#else>
+ <div class="small text-secondary ms-4 ps-1 fst-italic">#i18n{platform.agent.decision_node.emptyContent}</div>
+ </#if>
+ </div>
+ </#macro>
+
+ <#-- ===== Macro: recursive tree rendering ===== -->
+ <#macro renderNode nodeId nodeMap visited depth=0>
+ <#if nodeMap[nodeId]?? && !visited?seq_contains(nodeId)>
+ <#local node = nodeMap[nodeId]>
+ <#local expanded = (depth < 2)>
+ <#global _uid = (_uid!0) + 1>
+ <#local collapseId = "tree_${node.id}_${_uid}">
+ <@nodeRow node=node expanded=expanded collapseId=collapseId />
+ <#if node.transitions?? && node.transitions?has_content>
+ <div class="collapse<#if expanded> show</#if> ms-4 border-start" id="${collapseId}">
+ <#list node.transitions as transition>
+ <div class="ps-3">
+ <div class="py-1 d-flex align-items-center gap-1 small text-secondary overflow-hidden">
+ <i class="ti ti-corner-down-right flex-shrink-0"></i>
+ <#if transition.label?? && transition.label?has_content>
+ <span class="badge bg-secondary text-truncate">${transition.label}</span>
+ <#else>
+ <span class="fst-italic">#i18n{platform.agent.decision_node.autoTransition.short}</span>
+ </#if>
+ </div>
+ <div class="ms-3 ps-3 border-start">
+ <@renderNode nodeId=transition.targetNodeId?string nodeMap=nodeMap visited=visited + [nodeId] depth=depth+1 />
+ </div>
+ </div>
+ </#list>
+ </div>
+ </#if>
+ <#elseif nodeMap[nodeId]?? && visited?seq_contains(nodeId)>
+ <div class="py-1 d-flex align-items-center gap-1 small text-secondary fst-italic">
+ <i class="ti ti-refresh"></i> ${nodeMap[nodeId].nodeTitle!} <span class="badge bg-light text-dark border">#i18n{platform.agent.decision_tree.cycle}</span>
+ </div>
+ </#if>
+ </#macro>
+
+ <#-- ===== Tree View ===== -->
+ <div class="card mt-4">
+ <div class="card-header d-flex align-items-center justify-content-between">
+ <h5 class="card-title mb-0"><i class="ti ti-binary-tree me-2"></i>#i18n{platform.agent.decision_tree.section.treeView}</h5>
+ <div class="d-flex gap-2">
+ <#if decision_tree.userCanModify!false>
+ <button type="button" class="btn btn-light" data-bs-toggle="modal" data-bs-target="#modal_edit_tree">
+ <i class="ti ti-settings me-1"></i>#i18n{platform.agent.xpage.action.edit}
+ </button>
+ <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modal_add_node">
+ <i class="ti ti-plus me-1"></i>#i18n{platform.agent.decision_tree.action.addNode}
+ </button>
+ </#if>
+ </div>
+ </div>
+ <div class="card-body">
+ <#if !(decision_nodes?? && decision_nodes?has_content)>
+ <div class="text-center py-4 text-secondary">
+ <i class="ti ti-list-tree" style="font-size: 2rem;"></i>
+ <p class="mt-2">#i18n{platform.agent.decision_tree.noNodes}</p>
+ </div>
+ <#elseif root_nodes?size == 0>
+ <div class="alert alert-warning mb-3">
+ <i class="ti ti-alert-triangle me-1"></i>#i18n{platform.agent.decision_tree.warning.noRootNode}
+ </div>
+ <#list decision_nodes as node>
+ <@nodeRow node=node />
+ </#list>
+ <#else>
+ <@renderNode nodeId=root_nodes[0].id?string nodeMap=node_map visited=[] />
+ </#if>
+ </div>
+ </div>
+
+ <#-- ===== Orphan Nodes ===== -->
+ <#if orphan_nodes?? && orphan_nodes?has_content>
+ <div class="card mt-3">
+ <div class="card-header d-flex align-items-center gap-2">
+ <i class="ti ti-unlink text-secondary"></i>
+ <h5 class="card-title mb-0">#i18n{platform.agent.decision_tree.section.orphanNodes}</h5>
+ <div class="ms-auto">
+ <#if decision_tree.userCanDelete!false>
+ <form method="post" action="jsp/site/Portal.jsp" class="d-inline">
+ <input type="hidden" name="page" value="agent_decisiontree">
+ <input type="hidden" name="action" value="confirmRemoveOrphanNodes">
+ <input type="hidden" name="tree_id" value="${decision_tree.id}">
+ <input type="hidden" name="client_id" value="${client_id!}">
+ <button type="submit" class="btn btn-light">
+ <i class="ti ti-trash me-1"></i>#i18n{platform.agent.decision_tree.action.removeAllOrphans}
+ </button>
+ </form>
+ </#if>
+ </div>
+ </div>
+ <div class="card-body">
+ <p class="small text-secondary mb-3">#i18n{platform.agent.decision_tree.orphanNodes.description}</p>
+ <ul class="list-group">
+ <#list orphan_nodes as node>
+ <li class="list-group-item d-flex align-items-center justify-content-between">
+ <span class="fw-medium">${node.nodeTitle!}</span>
+ <div class="dropdown">
+ <button class="btn btn-sm btn-link text-secondary px-0" type="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="ti ti-dots-vertical"></i></button>
+ <ul class="dropdown-menu">
+ <#if decision_tree.userCanModify!false>
+ <li><a class="dropdown-item" href="jsp/site/Portal.jsp?page=agent_decisiontree&view=modifyDecisionNode&node_id=${node.id}&tree_id=${decision_tree.id}&client_id=${client_id!}"><i class="ti ti-pencil me-2"></i>#i18n{platform.agent.xpage.action.edit}</a></li>
+ </#if>
+ <#if decision_tree.userCanDelete!false>
+ <li><hr class="dropdown-divider"></li>
+ <li>
+ <form method="post" action="jsp/site/Portal.jsp">
+ <input type="hidden" name="page" value="agent_decisiontree">
+ <input type="hidden" name="action" value="confirmRemoveDecisionNode">
+ <input type="hidden" name="node_id" value="${node.id}">
+ <input type="hidden" name="tree_id" value="${decision_tree.id}">
+ <input type="hidden" name="client_id" value="${client_id!}">
+ <button type="submit" class="dropdown-item"><i class="ti ti-trash me-2"></i>#i18n{platform.agent.xpage.action.delete}</button>
+ </form>
+ </li>
+ </#if>
+ </ul>
+ </div>
+ </li>
+ </#list>
+ </ul>
+ </div>
+ </div>
+ </#if>
+
+ <#-- ===== Add Node Modal ===== -->
+ <div class="modal fade" id="modal_add_node" tabindex="-1">
+ <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+ <div class="modal-content">
+ <div class="modal-header">
+ <h1 class="modal-title fs-3">#i18n{platform.agent.decision_tree.addNode}</h1>
+ <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+ </div>
+ <div class="modal-body">
+ <form method="post" action="jsp/site/Portal.jsp" id="form_add_node">
+ <input type="hidden" name="page" value="agent_decisiontree">
+ <input type="hidden" name="action" value="doCreateDecisionNode">
+ <input type="hidden" name="tree_id" value="${decision_tree.id}">
+ <input type="hidden" name="client_id" value="${client_id!}">
+ <div class="row g-3">
+ <div class="col-12">
+ <label for="node_title" class="form-label">#i18n{platform.agent.model.entity.decisionNode.attribute.nodeTitle} *</label>
+ <input type="text" class="form-control" id="node_title" name="node_title" required>
+ </div>
+ <#if decision_nodes?? && decision_nodes?has_content>
+ <div class="col-12">
+ <label for="parent_node_id" class="form-label">#i18n{platform.agent.decision_tree.field.parentNode} *</label>
+ <select class="form-select" id="parent_node_id" name="parent_node_id" data-mu-toggle="select" required>
+ <option value="">#i18n{platform.agent.decision_tree.selectParentNode}</option>
+ <#list decision_nodes as node>
+ <option value="${node.id}">${node.nodeTitle!}</option>
+ </#list>
+ </select>
+ </div>
+ <div class="col-12">
+ <div class="form-check form-switch mb-2">
+ <input class="form-check-input" type="checkbox" id="add_node_auto_transition">
+ <label class="form-check-label" for="add_node_auto_transition">#i18n{platform.agent.decision_node.autoTransition}</label>
+ </div>
+ <div id="add_node_label_field">
+ <label for="transition_label" class="form-label">#i18n{platform.agent.model.entity.decisionTransition.attribute.label} *</label>
+ <input type="text" class="form-control" id="transition_label" name="transition_label" required>
+ </div>
+ </div>
+ </#if>
+ </div>
+ </form>
+ </div>
+ <div class="modal-footer">
+ <button type="button" class="btn btn-light" data-bs-dismiss="modal">#i18n{platform.agent.xpage.action.cancel}</button>
+ <button type="submit" form="form_add_node" class="btn btn-primary">
+ <i class="ti ti-plus me-1"></i>#i18n{platform.agent.decision_tree.action.addNode}
+ </button>
+ </div>
+ </div>
+ </div>
+ </div>
+
+<#include "commons/decision_tree_markdown_render.html">
+
+<#include "commons/decision_tree_preview_widget.html">
+
+<link rel="stylesheet" href="css/milkdown-editor.css">
+<script src="js/milkdown-editor.umd.js"></script>
+<script>
+(function() {
+ const TREE_ID = '${decision_tree.id}';
+ const UPLOAD_URL = 'rest/platform/agent/admin/decisiontrees/' + TREE_ID + '/images';
+ const IMAGE_SCHEME = 'lutece-image:';
+ const IMAGE_SERVE_PATH = 'rest/decisiontree/images/';
+
+ const fileToBase64 = (file) => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.onload = () => resolve(reader.result);
+  reader.onerror = () => reject(reader.error);
+  reader.readAsDataURL(file);
+ });
+
+ const uploadImage = async (file) => {
+  const content = await fileToBase64(file);
+  const resp = await fetch(UPLOAD_URL, {
+   method: 'POST',
+   headers: { 'Content-Type': 'application/json' },
+   body: JSON.stringify({ content, mimeType: file.type })
+  });
+  if (!resp.ok) throw new Error("#i18n{platform.modify_decision_node.js.uploadFailed}" + resp.status + ')');
+  const payload = await resp.json();
+  const marker = payload && payload.result ? payload.result.marker : null;
+  if (!marker) throw new Error("#i18n{platform.modify_decision_node.js.invalidUploadResponse}");
+  return marker;
+ };
+
+ const resolveImageUrl = (url) => {
+  if (url && url.startsWith(IMAGE_SCHEME)) return IMAGE_SERVE_PATH + url.slice(IMAGE_SCHEME.length);
+  return url;
+ };
+
+ const editors = {};
+ const fields = [
+  { el: 'editor_welcome_message', hidden: 'welcome_message_hidden' },
+  { el: 'editor_end_message', hidden: 'end_message_hidden' }
+ ];
+
+ const modal = document.getElementById('modal_edit_tree');
+ modal.addEventListener('shown.bs.modal', () => {
+  fields.forEach((f) => {
+   if (editors[f.el]) return;
+   const hiddenInput = document.getElementById(f.hidden);
+   MilkdownEditor.createEditor({
+    root: '#' + f.el,
+    defaultValue: hiddenInput.value,
+    onImageUpload: uploadImage,
+    imageUrlResolver: resolveImageUrl
+   }).then((editor) => { editors[f.el] = editor; });
+  });
+ });
+
+ document.getElementById('form_edit_tree').addEventListener('submit', () => {
+  fields.forEach((f) => {
+   if (editors[f.el]) {
+    document.getElementById(f.hidden).value = editors[f.el].getMarkdown();
+   }
+  });
+ });
+})();
+
+// Logo handling
+(function() {
+ var logoFile = document.getElementById('logo_file');
+ var logoPreview = document.getElementById('logo_preview');
+ var logoPreviewImg = document.getElementById('logo_preview_img');
+ var logoBase64Input = document.getElementById('logo_base64');
+ var removeLogo = document.getElementById('remove_logo');
+
+ logoFile.addEventListener('change', function(e) {
+  var file = e.target.files[0];
+  if (file) {
+   if (file.size > 2 * 1024 * 1024) { alert("#i18n{platform.create_bot.js.fileTooLarge}"); logoFile.value = ''; return; }
+   if (!file.type.startsWith('image/')) { alert("#i18n{platform.modify_decision_tree.js.selectImageFile}"); logoFile.value = ''; return; }
+   var reader = new FileReader();
+   reader.onload = function(e) { logoBase64Input.value = e.target.result; logoPreviewImg.src = e.target.result; logoPreview.classList.remove('d-none'); };
+   reader.readAsDataURL(file);
+  }
+ });
+
+ removeLogo.addEventListener('click', function() { logoFile.value = ''; logoBase64Input.value = ''; logoPreview.classList.add('d-none'); logoPreviewImg.src = ''; });
+})();
+
+// Add node modal: auto-transition toggle
+var addNodeAutoToggle = document.getElementById('add_node_auto_transition');
+var addNodeLabelField = document.getElementById('add_node_label_field');
+var addNodeLabelInput = document.getElementById('transition_label');
+if (addNodeAutoToggle) {
+ addNodeAutoToggle.addEventListener('change', function() {
+  if (this.checked) {
+   addNodeLabelField.style.display = 'none';
+   addNodeLabelInput.removeAttribute('required');
+   addNodeLabelInput.value = '';
+  } else {
+   addNodeLabelField.style.display = '';
+   addNodeLabelInput.setAttribute('required', '');
+  }
+ });
+}
+</script>

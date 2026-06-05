@@ -1,0 +1,23 @@
+<#-- One-time display of a freshly generated API key (creation or regeneration). The key is never retrievable again. -->
+<#if new_api_key??>
+<div class="alert alert-warning d-flex flex-column gap-2" role="alert">
+    <div class="d-flex align-items-center gap-2">
+        <i class="ti ti-key"></i>
+        <strong>#i18n{platform.client.apiKey.createdTitle}</strong>
+    </div>
+    <p class="mb-0 small">#i18n{platform.client.apiKey.createdHelper}</p>
+    <div class="input-group">
+        <input type="text" class="form-control font-monospace" id="new_api_key_value" value="${new_api_key}" readonly />
+        <button type="button" class="btn btn-light" id="btn_copy_new_api_key"><i class="ti ti-copy"></i></button>
+    </div>
+</div>
+<script>
+document.getElementById('btn_copy_new_api_key').addEventListener('click', function() {
+    const btn = this;
+    navigator.clipboard.writeText(document.getElementById('new_api_key_value').value).then(() => {
+        btn.innerHTML = '<i class="ti ti-check"></i>';
+        setTimeout(() => { btn.innerHTML = '<i class="ti ti-copy"></i>'; }, 1500);
+    });
+});
+</script>
+</#if>

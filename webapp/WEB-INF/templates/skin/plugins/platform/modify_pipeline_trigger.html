@@ -1,0 +1,60 @@
+<#ftl output_format="HTML">
+<#include "commons/page_header_pipeline.html">
+<div class="card">
+ <div class="card-header">
+  <h5 class="card-title mb-0"><i class="ti ti-clock-play me-2"></i>#i18n{platform.agent.trigger.modify.title}</h5>
+ </div>
+ <div class="card-body">
+  <form method="post" action="jsp/site/Portal.jsp?page=agent_pipeline">
+   <input type="hidden" name="action" value="doModifyTrigger">
+   <input type="hidden" name="id_trigger" value="${trigger.id}">
+   <input type="hidden" name="id_pipeline" value="${pipeline.id}">
+   <input type="hidden" name="client_id" value="${pipeline.idClient}">
+   <div class="mb-3">
+    <label for="trigger_name" class="form-label fw-medium">#i18n{platform.agent.trigger.attribute.name} <span class="text-danger">*</span></label>
+    <input type="text" class="form-control" id="trigger_name" name="trigger_name" value="${trigger.name!}" required>
+   </div>
+   <div class="mb-3">
+    <label class="form-label fw-medium">#i18n{platform.agent.trigger.attribute.triggerType}</label>
+    <div class="d-flex gap-3">
+     <div class="form-check">
+      <input class="form-check-input" type="radio" name="trigger_type" id="type_cron" value="cron" <#if !(trigger.configuration!'')?contains('interval_minutes')>checked</#if>>
+      <label class="form-check-label" for="type_cron">#i18n{platform.agent.trigger.type.cron}</label>
+     </div>
+     <div class="form-check">
+      <input class="form-check-input" type="radio" name="trigger_type" id="type_interval" value="interval" <#if (trigger.configuration!'')?contains('interval_minutes')>checked</#if>>
+      <label class="form-check-label" for="type_interval">#i18n{platform.agent.trigger.type.interval}</label>
+     </div>
+    </div>
+   </div>
+   <div class="mb-3<#if (trigger.configuration!'')?contains('interval_minutes')> d-none</#if>" id="cron_field">
+    <label for="cron_expression" class="form-label fw-medium">#i18n{platform.agent.trigger.attribute.cronExpression}</label>
+    <input type="text" class="form-control" id="cron_expression" name="cron_expression" placeholder="*/30 * * * *" value="<#if (trigger.configuration!'')?contains('cron_expression')>${trigger.configuration?replace('.*"cron_expression"\\s*:\\s*"([^"]*)".*', '$1', 'r')}</#if>">
+    <div class="form-text">#i18n{platform.agent.trigger.cronExpression.help}</div>
+   </div>
+   <div class="mb-3<#if !(trigger.configuration!'')?contains('interval_minutes')> d-none</#if>" id="interval_field">
+    <label for="interval_minutes" class="form-label fw-medium">#i18n{platform.agent.trigger.attribute.intervalMinutes}</label>
+    <input type="number" class="form-control" id="interval_minutes" name="interval_minutes" min="1" placeholder="30" value="<#if (trigger.configuration!'')?contains('interval_minutes')>${trigger.configuration?replace('.*"interval_minutes"\\s*:\\s*(\\d+).*', '$1', 'r')}</#if>">
+   </div>
+   <div class="mb-3">
+    <label for="input_data" class="form-label fw-medium">#i18n{platform.agent.trigger.attribute.inputData}</label>
+    <textarea class="form-control" id="input_data" name="input_data" rows="4" placeholder='{"key": "value"}'>${trigger.inputData!}</textarea>
+   </div>
+   <div class="form-check form-switch mb-4">
+    <input class="form-check-input" type="checkbox" id="active" name="active" <#if trigger.active>checked</#if>>
+    <label class="form-check-label" for="active">#i18n{platform.agent.trigger.attribute.active}</label>
+   </div>
+   <button type="submit" class="btn btn-primary">#i18n{platform.agent.trigger.buttonSave}</button>
+   <a class="btn btn-outline-secondary ms-2" href="jsp/site/Portal.jsp?page=agent_pipeline&view=viewTriggers&id_pipeline=${pipeline.id}&client_id=${pipeline.idClient}">#i18n{platform.agent.xpage.action.cancel}</a>
+  </form>
+ </div>
+</div>
+<script type="module">
+ const radios = document.querySelectorAll('input[name="trigger_type"]');
+ const cronField = document.getElementById('cron_field');
+ const intervalField = document.getElementById('interval_field');
+ radios.forEach(r => r.addEventListener('change', () => {
+  cronField.classList.toggle('d-none', r.value !== 'cron' || !r.checked);
+  intervalField.classList.toggle('d-none', r.value !== 'interval' || !r.checked);
+ }));
+</script>

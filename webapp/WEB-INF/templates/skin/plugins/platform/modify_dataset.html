@@ -1,0 +1,77 @@
+<#ftl output_format="HTML">
+<#include "commons/page_header_dataset.html">
+
+ <form method="post" action="jsp/site/Portal.jsp">
+ <input type="hidden" name="page" value="agent_dataset">
+ <input type="hidden" name="action" value="doModifyDataset">
+ <input type="hidden" name="dataset_id" value="${dataset.id!}">
+ <input type="hidden" name="client_id" value="${client_id!}">
+
+ <div class="row g-3">
+ <div class="col-lg-8">
+ <div class="card mb-3">
+ <div class="card-body">
+ <h5 class="fw-bold mb-3"><i class="ti ti-settings me-2"></i>#i18n{platform.agent.modify_dataset.pageTitle}</h5>
+ <div class="row g-3">
+ <div class="col-12">
+ <label class="form-label" for="dataset_name">#i18n{platform.agent.model.entity.dataset.attribute.datasetName} *</label>
+ <input type="text" name="dataset_name" id="dataset_name" class="form-control" value="${dataset.datasetName!}" required>
+ </div>
+ <div class="col-12">
+ <label class="form-label" for="dataset_description">#i18n{platform.agent.model.entity.dataset.attribute.datasetDescription}</label>
+ <input type="text" name="dataset_description" id="dataset_description" class="form-control" value="${dataset.datasetDescription!}">
+ </div>
+ <div class="col-12">
+ <label class="form-label" for="dataset_routing_rules">#i18n{platform.agent.model.entity.dataset.attribute.datasetRoutingRules}</label>
+ <textarea name="dataset_routing_rules" id="dataset_routing_rules" class="form-control" rows="6">${dataset.datasetRoutingRules!}</textarea>
+ <div class="form-text">#i18n{platform.agent.helper.datasetRoutingRules}</div>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+
+ <div class="col-lg-4">
+ <div class="card mb-3">
+ <div class="card-body">
+ <h5 class="fw-bold mb-3"><i class="ti ti-brain me-2"></i>#i18n{platform.agent.modify_bot.technical_config}</h5>
+ <div class="mb-3">
+ <label class="form-label" for="llm_provider_id">#i18n{platform.agent.model.entity.dataset.attribute.llmProviderId} *</label>
+ <select name="llm_provider_id" id="llm_provider_id" class="form-select" data-mu-toggle="select" required>
+ <#if (llm_providers!)?has_content>
+ <#list llm_providers as provider>
+ <option value="${provider.id!}" <#if (dataset.llmProviderId!0) == provider.id>selected</#if>>${provider.providerName!}</option>
+ </#list>
+ <#else>
+ <option value="">#i18n{platform.agent.modify_dataset.noLlmProvider}</option>
+ </#if>
+ </select>
+ <div class="form-text">#i18n{platform.agent.helper.llmProvider}</div>
+ </div>
+ <div class="mb-3">
+ <label class="form-label" for="embed_provider_id">#i18n{platform.agent.model.entity.dataset.attribute.embedProviderId} *</label>
+ <select name="embed_provider_id" id="embed_provider_id" class="form-select" data-mu-toggle="select" required>
+ <#if (embed_providers!)?has_content>
+ <#list embed_providers as provider>
+ <option value="${provider.id!}" <#if (dataset.embedProviderId!0) == provider.id>selected</#if>>${provider.providerName!}</option>
+ </#list>
+ <#else>
+ <option value="">#i18n{platform.agent.modify_dataset.noEmbedProvider}</option>
+ </#if>
+ </select>
+ <div class="form-text">#i18n{platform.agent.helper.embedProvider}</div>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+
+ <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+ <a href="jsp/site/Portal.jsp?page=agent_dataset&view=viewDataset&dataset_id=${dataset.id!}&client_id=${client_id!}" class="btn btn-light">
+ #i18n{platform.agent.xpage.action.cancel}
+ </a>
+ <button type="submit" class="btn btn-primary">
+ <i class="ti ti-device-floppy me-1"></i>#i18n{platform.agent.xpage.action.save}
+ </button>
+ </div>
+ </form>

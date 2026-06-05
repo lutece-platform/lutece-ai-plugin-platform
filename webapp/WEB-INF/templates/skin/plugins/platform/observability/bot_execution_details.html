@@ -1,0 +1,316 @@
+<#ftl output_format="HTML">
+<#assign resourceItem = (metrics.resourceItems[execution.resourceType][execution.resourceId])!>
+<#assign resourceName = resourceItem.name!(execution.resourceName!execution.resourceId)>
+<#if resource_type?? && resource_id??>
+ <#assign backUrl = "jsp/site/Portal.jsp?page=agent_observability&view=resourceObservability&resource_type=${resource_type}&resource_id=${resource_id}&client_id=${client.id}" />
+<#else>
+ <#assign backUrl = "jsp/site/Portal.jsp?page=platform&view=clientObservability&id=${client.id}" />
+</#if>
+
+<#-- Parse input/output JSON safely -->
+<#assign inputJson = {}>
+<#assign outputJson = {}>
+<#attempt>
+ <#assign inputJson = (execution.inputData!"")?replace(':null', ':""')?replace(': null', ':""')?eval>
+<#recover></#attempt>
+<#attempt>
+ <#assign outputJson = (execution.outputData!"")?replace(':null', ':""')?replace(': null', ':""')?eval>
+<#recover></#attempt>
+
+<#-- Compute totals from nodes -->
+<#assign totalInputTokens = 0>
+<#assign totalOutputTokens = 0>
+<#if execution.nodeExecutions??>
+ <#list execution.nodeExecutions as node>
+ <#if node.outputData?? && node.outputData?has_content>
+ <#attempt>
+ <#assign nodeOut = node.outputData?replace(':null', ':""')?replace(': null', ':""')?eval>
+ <#if nodeOut.attributes??>
+ <#if nodeOut.attributes.inputTokens??><#assign totalInputTokens = totalInputTokens + nodeOut.attributes.inputTokens></#if>
+ <#if nodeOut.attributes.outputTokens??><#assign totalOutputTokens = totalOutputTokens + nodeOut.attributes.outputTokens></#if>
+ </#if>
+ <#recover></#attempt>
+ </#if>
+ </#list>
+</#if>
+
+<#-- Compute duration -->
+<#assign durationMs = 0>
+<#if execution.endTime?? && execution.startTime??>
+ <#assign durationMs = (execution.endTime?long - execution.startTime?long)>
+</#if>
+<#macro durationFormat ms>
+ <#if ms < 1000>${ms}ms<#elseif ms < 60000>${(ms/1000)?string("0.#")}s<#else>${(ms/60000)?int}m ${((ms%60000)/1000)?int}s</#if>
+</#macro>
+
+<#-- Status badge macro -->
+<#macro statusBadge status>
+ <#switch status.value>
+ <#case "COMPLETED"><span class="badge text-bg-success">#i18n{platform.observability.status.completed}</span><#break>
+ <#case "ERROR"><span class="badge text-bg-danger">#i18n{platform.observability.status.error}</span><#break>
+ <#case "PENDING"><span class="badge text-bg-warning">#i18n{platform.observability.status.pending}</span><#break>
+ <#case "RUNNING"><span class="badge text-bg-primary">#i18n{platform.observability.status.running}</span><#break>
+ <#case "CANCELLED"><span class="badge text-bg-secondary">#i18n{platform.observability.status.cancelled}</span><#break>
+ <#default><span class="badge text-bg-light">${status.value}</span>
+ </#switch>
+</#macro>
+
+<#if header_current_view??>
+ <#-- Layout with page header (AgentXPage) -->
+ <div class="px-3 mt-3">
+ <#if resource_type! == "BOT"><#include "../commons/page_header_bot.html">
+ <#elseif resource_type! == "PIPELINE"><#include "../commons/page_header_pipeline.html">
+ <#elseif resource_type! == "DATASET"><#include "../commons/page_header_dataset.html">
+ <#elseif resource_type! == "VISION"><#include "../commons/page_header_vision.html">
+ <#elseif resource_type! == "MODEL"><#include "../commons/page_header_model.html">
+ </#if>
+ <div>
+ <div>
+<#else>
+ <#-- Layout standalone (PlatformXPage) -->
+ <div class="px-3 mt-4">
+ <div>
+ <div>
+</#if>
+
+ <#-- Header -->
+ <div class="mb-4">
+ <#if !(header_current_view??)>
+ <a href="${backUrl}" class="text-secondary small d-inline-block mb-2 text-decoration-underline">
+ <i class="ti ti-arrow-left"></i>#i18n{platform.xpage.action.back}
+ </a>
+ </#if>
+ <div class="d-flex align-items-center">
+ <h2 class="fw-bold h4">${resourceName}</h2>
+ <span class="ms-auto"><@statusBadge status=execution.status /></span>
+ </div>
+ <p class="text-secondary small mt-1">
+ <#if execution.startTime??>${execution.startTime?string("dd/MM/yyyy HH:mm:ss")}</#if>
+ <span class="mx-1">&middot;</span>
+ <code class="small">${execution.executionId}</code>
+ </p>
+ </div>
+
+ <#-- Metrics row -->
+ <div class="row g-3 mb-3">
+ <div class="col-6 col-lg-3 d-flex">
+ <div class="card flex-fill">
+ <div class="card-body">
+ <div class="d-flex align-items-center justify-content-between mb-2">
+ <span class="text-secondary small text-truncate">#i18n{platform.observability.table.duration}</span>
+ <i class="ti ti-clock text-secondary"></i>
+ </div>
+ <p class="h3 fw-bold mb-0 text-truncate"><@durationFormat ms=durationMs /></p>
+ </div>
+ </div>
+ </div>
+ <div class="col-6 col-lg-3 d-flex">
+ <div class="card flex-fill">
+ <div class="card-body">
+ <div class="d-flex align-items-center justify-content-between mb-2">
+ <span class="text-secondary small text-truncate">#i18n{platform.observability.table.cost}</span>
+ <i class="ti ti-currency-euro text-secondary"></i>
+ </div>
+ <p class="h3 fw-bold mb-0 text-truncate">${(execution.totalCost!0)?string["0.####"]}&euro;</p>
+ </div>
+ </div>
+ </div>
+ <div class="col-6 col-lg-3 d-flex">
+ <div class="card flex-fill">
+ <div class="card-body">
+ <div class="d-flex align-items-center justify-content-between mb-2">
+ <span class="text-secondary small text-truncate">Tokens in</span>
+ <i class="ti ti-arrow-down text-secondary"></i>
+ </div>
+ <p class="h3 fw-bold mb-0 text-truncate">${totalInputTokens?string.computer}</p>
+ </div>
+ </div>
+ </div>
+ <div class="col-6 col-lg-3 d-flex">
+ <div class="card flex-fill">
+ <div class="card-body">
+ <div class="d-flex align-items-center justify-content-between mb-2">
+ <span class="text-secondary small text-truncate">Tokens out</span>
+ <i class="ti ti-arrow-up text-secondary"></i>
+ </div>
+ <p class="h3 fw-bold mb-0 text-truncate">${totalOutputTokens?string.computer}</p>
+ </div>
+ </div>
+ </div>
+ </div>
+
+ <#-- Error alert -->
+ <#if execution.errorMessage?? && execution.errorMessage?has_content>
+ <div class="alert alert-danger mb-4">${execution.errorMessage}</div>
+ </#if>
+
+ <#-- Conversation: Query & Response -->
+ <div class="card mb-4">
+ <div class="card-body p-3">
+ <#-- Bot response (computed first for display) -->
+ <#assign botResponse = "">
+ <#if outputJson.attributes?? && outputJson.attributes.response?? && outputJson.attributes.response?has_content>
+ <#assign botResponse = outputJson.attributes.response>
+ <#else>
+ <#if execution.nodeExecutions??>
+ <#list execution.nodeExecutions as node>
+ <#if botResponse == "" && node.outputData?? && node.outputData?has_content && node.outputData?contains('"response"')>
+ <#attempt>
+ <#assign nodeOut = node.outputData?replace(':null', ':""')?replace(': null', ':""')?eval>
+ <#if nodeOut.attributes?? && nodeOut.attributes.response?? && nodeOut.attributes.response?length gt botResponse?length>
+ <#assign botResponse = nodeOut.attributes.response>
+ </#if>
+ <#recover></#attempt>
+ </#if>
+ </#list>
+ </#if>
+ </#if>
+
+ <div class="d-flex flex-column gap-4">
+ <#-- User query -->
+ <#if inputJson.attributes?? && inputJson.attributes.query?? && inputJson.attributes.query?has_content>
+ <div class="d-flex flex-column align-items-end">
+ <div class="card bg-secondary text-white" style="max-width:80%">
+ <div class="card-body p-3">${inputJson.attributes.query}</div>
+ </div>
+ <div class="text-secondary small mt-1"><#if inputJson.attributes.userId?? && inputJson.attributes.userId?has_content>${inputJson.attributes.userId}<#else>#i18n{platform.agent.view_conversation.user}</#if></div>
+ </div>
+ </#if>
+
+ <#-- Bot response -->
+ <#if botResponse?has_content>
+ <div>
+ <div class="card mu-chat-content w-100">
+ <div class="card-body p-3 mu-chat-md">${botResponse}</div>
+ </div>
+ <div class="text-secondary small mt-1">${resourceName}</div>
+ </div>
+ </#if>
+ </div>
+
+ <#if inputJson.attributes?? && inputJson.attributes.conversationUuid?? && inputJson.attributes.conversationUuid?has_content>
+ <div class="text-end mt-3 pt-3 border-top">
+ <a href="jsp/site/Portal.jsp?page=agent_conversation&amp;view=viewConversation&amp;conversation_uuid=${inputJson.attributes.conversationUuid}" class="btn btn-light">
+ <i class="ti ti-messages"></i> #i18n{platform.agent.manage_feedbacks.viewConversation}
+ </a>
+ </div>
+ </#if>
+ </div>
+ </div>
+
+ <#-- Conversation history (collapsible) -->
+ <#if inputJson.attributes?? && inputJson.attributes.history?? && inputJson.attributes.history?has_content>
+ <div class="mb-4">
+ <details>
+ <summary class="d-flex align-items-center justify-content-between gap-4 py-2 small fw-medium text-decoration-underline" role="button">
+ <span class="d-flex align-items-center">
+ <i class="ti ti-history"></i>
+ #i18n{platform.bot_execution_details.conversationHistory}
+ </span>
+ <i class="ti ti-chevron-down"></i>
+ </summary>
+ <div class="mt-2 d-flex flex-column gap-4">
+ <#list inputJson.attributes.history as msg>
+ <#if msg.role == "user">
+ <div class="d-flex flex-column align-items-end">
+ <div class="card bg-secondary text-white" style="max-width:80%">
+ <div class="card-body p-3">${msg.content!''}</div>
+ </div>
+ <div class="text-secondary small mt-1">${msg.role}</div>
+ </div>
+ <#else>
+ <div>
+ <div class="card mu-chat-content w-100">
+ <div class="card-body p-3">${msg.content!''}</div>
+ </div>
+ <div class="text-secondary small mt-1">${msg.role}</div>
+ </div>
+ </#if>
+ </#list>
+ </div>
+ </details>
+ </div>
+ </#if>
+
+ <#-- Processing pipeline -->
+ <#if execution.nodeExecutions?? && execution.nodeExecutions?has_content>
+ <h5 class="fw-bold mb-3">#i18n{platform.bot_execution_details.processingPipeline}</h5>
+
+ <div class="card mb-4">
+ <div class="card-body p-0">
+ <div class="table-responsive">
+ <table class="table table-hover align-middle mb-0">
+ <thead>
+ <tr>
+ <th>#</th>
+ <th>#i18n{platform.observability.node.name}</th>
+ <th>#i18n{platform.observability.table.status}</th>
+ <th><i class="ti ti-arrow-down"></i> In</th>
+ <th><i class="ti ti-arrow-up"></i> Out</th>
+ <th>#i18n{platform.observability.table.cost}</th>
+ <th>#i18n{platform.observability.table.duration}</th>
+ </tr>
+ </thead>
+ <tbody>
+ <#list execution.nodeExecutions?sort_by("executionOrder") as node>
+ <#assign nodeIn = {}>
+ <#assign nodeOut = {}>
+ <#attempt><#assign nodeIn = (node.inputData!"")?replace(':null', ':""')?replace(': null', ':""')?eval><#recover></#attempt>
+ <#attempt><#assign nodeOut = (node.outputData!"")?replace(':null', ':""')?replace(': null', ':""')?eval><#recover></#attempt>
+ <#assign nodeDuration = 0>
+ <#if node.endTime?? && node.startTime??><#assign nodeDuration = (node.endTime?long - node.startTime?long)></#if>
+ <#assign modelName = (nodeIn.attributes.description)!''>
+ <#assign nodeInputTokens = (nodeOut.attributes.inputTokens)!0>
+ <#assign nodeOutputTokens = (nodeOut.attributes.outputTokens)!0>
+ <tr>
+ <td>${node.executionOrder}</td>
+ <td>
+ <span class="fw-semibold">${node.nodeName!node.nodeId}</span>
+ <#if modelName?has_content><br><span class="badge text-bg-secondary">${modelName}</span></#if>
+ </td>
+ <td><@statusBadge status=node.status /></td>
+ <td class="text-secondary small"><#if (nodeInputTokens > 0)>${nodeInputTokens?string.computer}<#else>-</#if></td>
+ <td class="text-secondary small"><#if (nodeOutputTokens > 0)>${nodeOutputTokens?string.computer}<#else>-</#if></td>
+ <td class="text-secondary small"><#if node.totalCost?? && node.totalCost != 0>${node.totalCost?string["0.######"]}&euro;<#else>-</#if></td>
+ <td class="text-secondary small"><#if nodeDuration gt 0><@durationFormat ms=nodeDuration /><#else>-</#if></td>
+ </tr>
+ <#if node.errorMessage?? && node.errorMessage?has_content>
+ <tr><td></td><td colspan="6" class="small">${node.errorMessage}</td></tr>
+ </#if>
+ </#list>
+ </tbody>
+ </table>
+ </div>
+ </div>
+ </div>
+ </#if>
+
+ <#-- Metadata -->
+ <#if inputJson.attributes??>
+ <div class="card mb-4">
+ <div class="card-body p-3">
+ <div class="d-flex flex-wrap gap-3 small text-secondary">
+ <#if inputJson.attributes.botId??>
+ <div><span class="fw-semibold">Bot ID:</span> ${inputJson.attributes.botId}</div>
+ </#if>
+ <#if inputJson.attributes.userId?? && inputJson.attributes.userId?has_content>
+ <div><span class="fw-semibold">User:</span> <code class="small">${inputJson.attributes.userId}</code></div>
+ </#if>
+ <#if inputJson.attributes.conversationUuid?? && inputJson.attributes.conversationUuid?has_content>
+ <div><span class="fw-semibold">Conversation:</span> <a href="jsp/site/Portal.jsp?page=agent_conversation&amp;view=viewConversation&amp;conversation_uuid=${inputJson.attributes.conversationUuid}" class="small"><i class="ti ti-message-chatbot"></i> ${inputJson.attributes.conversationUuid}</a></div>
+ </#if>
+ </div>
+ </div>
+ </div>
+ </#if>
+
+ </div>
+ </div>
+</div>
+
+<script src="js/marked.min.js"></script>
+<script>
+document.querySelectorAll('.mu-chat-md').forEach(function(el) {
+  el.innerHTML = marked.parse(el.textContent);
+});
+</script>

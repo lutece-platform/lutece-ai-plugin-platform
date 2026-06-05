@@ -1,0 +1,66 @@
+<@pageContainer>
+    <@pageColumn>
+        <@pageHeader title='#i18n{platform.agent.manage_providers.pageTitle}'>
+            <@aButton 
+                href='jsp/admin/plugins/platform/ManageAgentProviders.jsp?view=createProvider' 
+                buttonIcon='plus' 
+                title='#i18n{platform.agent.manage_providers.buttonAdd}' 
+                size='' 
+            />
+        </@pageHeader>
+
+        <@messages infos=infos warnings=warnings errors=errors />
+
+        <@table>
+            <@tr>
+                <@th>#i18n{platform.agent.model.entity.provider.attribute.providerId}</@th>
+                <@th>#i18n{platform.agent.model.entity.provider.attribute.providerName}</@th>
+                <@th>#i18n{platform.agent.model.entity.provider.attribute.providerType}</@th>
+                <@th>#i18n{platform.agent.model.entity.provider.attribute.providerVendor}</@th>
+                <@th>#i18n{platform.agent.model.entity.provider.attribute.deploymentEndpoint}</@th>
+                <@th>#i18n{platform.agent.model.entity.provider.attribute.tokenInputPrice1M}</@th>
+                <@th>#i18n{platform.agent.model.entity.provider.attribute.tokenOutputPrice1M}</@th>
+                <@th>#i18n{platform.agent.manage_providers.columnActions}</@th>
+            </@tr>
+
+            <#if provider_list?? && provider_list?size gt 0>
+                <#list provider_list as provider>
+                    <@tr>
+                        <@td>${provider.id}</@td>
+                        <@td>${provider.providerName!}</@td>
+                        <@td>${provider.providerType!}</@td>
+                        <@td>${provider.providerVendor!}</@td>
+                        <@td>${provider.deploymentEndpoint!}</@td>
+                        <@td>${provider.tokenInputPrice1M!0}</@td>
+                        <@td>${provider.tokenOutputPrice1M!0}</@td>
+                        <@td>
+                            <@aButton 
+                                href='jsp/admin/plugins/platform/ManageAgentProviders.jsp?view=modifyProvider&provider_id=${provider.id}' 
+                                buttonIcon='edit' 
+                                title='#i18n{platform.agent.manage_providers.buttonModify}' 
+                                size='sm' 
+                            />
+                            <@aButton
+                                href='jsp/admin/plugins/platform/ManageAgentProviders.jsp?action=confirmRemoveProvider&provider_id=${provider.id}'
+                                buttonIcon='trash'
+                                title='#i18n{platform.agent.manage_providers.buttonDelete}'
+                                color='danger'
+                                size='sm'
+                            />
+                        </@td>
+                    </@tr>
+                </#list>
+            <#else>
+                <@tr>
+                    <@td colspan=7 align="center">
+                        <@empty 
+                            iconName="files-off" 
+                            title="#i18n{platform.agent.manage_providers.noProvider}" 
+                            subtitle="" 
+                        />
+                    </@td>
+                </@tr>
+            </#if>
+        </@table>
+    </@pageColumn>
+</@pageContainer>

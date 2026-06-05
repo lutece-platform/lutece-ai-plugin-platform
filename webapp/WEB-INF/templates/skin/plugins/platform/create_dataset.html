@@ -1,0 +1,93 @@
+<#ftl output_format="HTML">
+
+<#-- Header -->
+<div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4">
+ <div>
+ <a href="jsp/site/Portal.jsp?page=platform&amp;view=viewClient&amp;id=${client_id!}" class="small text-secondary text-decoration-none d-flex align-items-center gap-1 mb-2">
+ <i class="ti ti-arrow-left"></i>#i18n{platform.agent.xpage.action.back}
+ </a>
+ <h1 class="fw-bold mb-1">#i18n{platform.agent.xpage.createDataset.title}</h1>
+ <p class="text-secondary mb-0">#i18n{platform.agent.xpage.createDataset.subtitle}</p>
+ </div>
+</div>
+
+ <#if (infos!)?has_content><#list (infos![]) as info><div class="alert alert-info">${info!}</div></#list></#if>
+ <#if (errors!)?has_content><#list (errors![]) as error><div class="alert alert-danger">${error.message!}</div></#list></#if>
+
+ <form method="post" action="jsp/site/Portal.jsp">
+ <input type="hidden" name="page" value="agent_dataset">
+ <input type="hidden" name="action" value="doCreateDataset">
+ <input type="hidden" name="client_id" value="${client_id!}">
+
+ <div class="row g-3">
+
+ <#-- ===== Left column ===== -->
+ <div class="col-lg-8">
+ <div class="card">
+ <div class="card-body">
+ <h5 class="fw-bold mb-3"><i class="ti ti-settings me-2"></i>#i18n{platform.agent.create_dataset.general_info}</h5>
+ <div class="row g-3">
+ <div class="col-md-6">
+ <label for="dataset_name" class="form-label">#i18n{platform.agent.model.entity.dataset.attribute.datasetName} *</label>
+ <input type="text" class="form-control" id="dataset_name" name="dataset_name" required>
+ </div>
+ <div class="col-md-6">
+ <label for="dataset_description" class="form-label">#i18n{platform.agent.model.entity.dataset.attribute.datasetDescription}</label>
+ <input type="text" class="form-control" id="dataset_description" name="dataset_description">
+ </div>
+ <div class="col-12">
+ <label for="dataset_routing_rules" class="form-label">#i18n{platform.agent.model.entity.dataset.attribute.datasetRoutingRules}</label>
+ <textarea class="form-control" id="dataset_routing_rules" name="dataset_routing_rules" rows="6"></textarea>
+ <div class="form-text">#i18n{platform.agent.helper.datasetRoutingRules}</div>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+
+ <#-- ===== Right column ===== -->
+ <div class="col-lg-4">
+ <div class="card">
+ <div class="card-body">
+ <h5 class="fw-bold mb-3"><i class="ti ti-brain me-2"></i>#i18n{platform.agent.create_dataset.technical_config}</h5>
+ <div class="mb-3">
+ <label for="llm_provider_id" class="form-label">#i18n{platform.agent.model.entity.dataset.attribute.llmProviderId} *</label>
+ <select class="form-select" data-mu-toggle="select" id="llm_provider_id" name="llm_provider_id" required>
+ <#if llm_providers?? && llm_providers?size gt 0>
+ <#list llm_providers as provider>
+ <option value="${provider.id}">${provider.providerName}</option>
+ </#list>
+ <#else>
+ <option value="">#i18n{platform.create_bot.noLlmProviderOption}</option>
+ </#if>
+ </select>
+ <div class="form-text">#i18n{platform.agent.helper.llmProvider}</div>
+ </div>
+ <div class="mb-3">
+ <label for="embed_provider_id" class="form-label">#i18n{platform.agent.model.entity.dataset.attribute.embedProviderId} *</label>
+ <select class="form-select" data-mu-toggle="select" id="embed_provider_id" name="embed_provider_id" required>
+ <#if embed_providers?? && embed_providers?size gt 0>
+ <#list embed_providers as provider>
+ <option value="${provider.id}">${provider.providerName}</option>
+ </#list>
+ <#else>
+ <option value="">#i18n{platform.create_bot.noEmbedProviderOption}</option>
+ </#if>
+ </select>
+ <div class="form-text">#i18n{platform.agent.helper.embedProvider}</div>
+ </div>
+ </div>
+ </div>
+ </div>
+
+ </div>
+
+ <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+ <a href="jsp/site/Portal.jsp?page=platform&amp;view=viewClient&amp;id=${client_id!}" class="btn btn-light">
+ #i18n{platform.agent.xpage.action.cancel}
+ </a>
+ <button type="submit" class="btn btn-primary">
+ <i class="ti ti-device-floppy me-1"></i>#i18n{platform.agent.xpage.action.save}
+ </button>
+ </div>
+ </form>

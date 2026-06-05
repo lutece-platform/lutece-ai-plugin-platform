@@ -1,0 +1,74 @@
+<#ftl output_format="HTML">
+<#include "commons/page_header_vision.html">
+<#include "commons/api_key_playground.html" />
+
+<div class="row g-4">
+
+ <@apiKeyAuthCard/>
+
+ <div class="col-12">
+  <div class="card">
+   <div class="card-header d-flex align-items-center gap-2">
+    <i class="ti ti-world text-primary"></i>
+    <strong>#i18n{platform.agent.api.section.baseUrl}</strong>
+   </div>
+   <div class="card-body">
+    <pre class="border rounded p-3 bg-body-tertiary small mb-0">${app_base_url!}rest/platform/agent/api/vision</pre>
+   </div>
+  </div>
+ </div>
+
+ <#-- POST /process/{id} -->
+ <div class="col-12">
+  <div class="card">
+   <div class="card-header d-flex align-items-center gap-2">
+    <span class="badge text-bg-warning text-dark">POST</span>
+    <code>/process/${vision.id}</code>
+    <span class="text-secondary small">#i18n{platform.api_vision.process.description}</span>
+   </div>
+   <div class="card-body">
+    <pre class="border rounded p-3 bg-body-tertiary small" id="curl-vision">curl -s -X POST "${app_base_url!}rest/platform/agent/api/vision/process/${vision.id}" \
+  -H "X-Client-Code: ${masked_code}" \
+  -H "Content-Type: image/jpeg" \
+  --data-binary @/chemin/vers/image.jpg</pre>
+    <div class="d-flex gap-2 mt-2">
+     <button class="btn btn-sm btn-light" onclick="copyToClipboard('curl-vision', this)">
+      <i class="ti ti-copy me-1"></i>#i18n{platform.agent.api.copy}
+     </button>
+    </div>
+    <div class="mt-3">
+     <label class="form-label small text-secondary">#i18n{platform.api_vision.test.localImage}</label>
+     <input type="file" accept="image/*" class="form-control form-control-sm" id="vision-file-input">
+     <button class="btn btn-sm btn-primary mt-2" onclick="runVisionTest()">
+      <i class="ti ti-player-play me-1"></i>#i18n{platform.agent.api.test}
+     </button>
+    </div>
+    <div id="result-vision" class="mt-2 d-none">
+     <pre class="border rounded p-2 small bg-body-tertiary" style="max-height:300px;overflow:auto"></pre>
+    </div>
+   </div>
+  </div>
+ </div>
+
+</div>
+
+<@apiKeyPlaygroundJs/>
+<script>
+function runVisionTest() {
+  const fileInput = document.getElementById('vision-file-input');
+  const el = document.getElementById('result-vision');
+  const pre = el.querySelector('pre');
+  if (!fileInput.files[0]) { alert("#i18n{platform.api_vision.test.selectImage}"); return; }
+  el.classList.remove('d-none');
+  pre.textContent = "#i18n{platform.api_vision.test.loading}";
+  fileInput.files[0].arrayBuffer().then(buffer => {
+    return fetch('${app_base_url!}rest/platform/agent/api/vision/process/${vision.id}', {
+      method: 'POST',
+      headers: { 'X-Client-Code': getApiKey(), 'Content-Type': fileInput.files[0].type || 'image/jpeg' },
+      body: buffer
+    });
+  }).then(r => r.text())
+    .then(text => { try { pre.textContent = JSON.stringify(JSON.parse(text), null, 2); } catch(e) { pre.textContent = text; } })
+    .catch(err => { pre.textContent = "#i18n{platform.api_vision.test.error}" + err; });
+}
+</script>

@@ -1,0 +1,179 @@
+<#ftl output_format="HTML">
+<#assign resourceItem = (metrics.resourceItems[execution.resourceType][execution.resourceId])!>
+<#assign resourceName = resourceItem.name!(execution.resourceName!execution.resourceId)>
+<#assign backUrl = "jsp/site/Portal.jsp?page=platform&view=clientObservability&id=${client.id}" />
+<#if resource_type??><#assign backUrl = backUrl + "&resource_type=${resource_type}" /></#if>
+<#if resource_id??><#assign backUrl = backUrl + "&resource_id=${resource_id}" /></#if>
+
+<#-- Header -->
+<div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4">
+    <div>
+        <a href="${backUrl}" class="small text-secondary text-decoration-none d-flex align-items-center gap-1">
+            <i class="ti ti-arrow-left"></i>
+            #i18n{platform.xpage.action.back}
+        </a>
+        <h2 class="mt-2 mb-1 fw-bold">${resourceName} - ${execution.executionId}</h2>
+        <p class="text-secondary mb-0">#i18n{platform.observability.execution.details}</p>
+    </div>
+    <div class="mt-2 mt-md-0">
+        <#switch execution.status.value>
+            <#case "COMPLETED">
+                <span class="badge text-bg-success">#i18n{platform.observability.status.completed}</span>
+                <#break>
+            <#case "ERROR">
+                <span class="badge text-bg-danger">#i18n{platform.observability.status.error}</span>
+                <#break>
+            <#case "PENDING">
+                <span class="badge text-bg-warning">#i18n{platform.observability.status.pending}</span>
+                <#break>
+            <#case "RUNNING">
+                <span class="badge text-bg-info">#i18n{platform.observability.status.running}</span>
+                <#break>
+            <#case "CANCELLED">
+                <span class="badge text-bg-secondary">#i18n{platform.observability.status.cancelled}</span>
+                <#break>
+            <#default>
+                <span class="badge text-bg-secondary">${execution.status.value}</span>
+        </#switch>
+    </div>
+</div>
+
+<#include "commons/messages.html" />
+
+<div class="row g-4">
+    <#-- Execution Info Card -->
+    <div class="col-lg-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="d-flex align-items-center gap-2 mb-0">
+                    <i class="ti ti-info-circle"></i>
+                    #i18n{platform.observability.execution.info}
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex flex-column gap-3">
+                    <div>
+                        <div class="small text-secondary">#i18n{platform.observability.table.resource}</div>
+                        <div class="fw-semibold">${resourceName}</div>
+                    </div>
+                    <div>
+                        <div class="small text-secondary">#i18n{platform.observability.table.type}</div>
+                        <div class="fw-semibold">${execution.resourceTypeName!''}</div>
+                    </div>
+                    <div>
+                        <div class="small text-secondary">#i18n{platform.observability.table.start}</div>
+                        <div class="fw-semibold"><#if execution.startTime??>${execution.startTime?string("dd/MM/yyyy HH:mm:ss")}<#else>-</#if></div>
+                    </div>
+                    <div>
+                        <div class="small text-secondary">#i18n{platform.observability.execution.end}</div>
+                        <div class="fw-semibold"><#if execution.endTime??>${execution.endTime?string("dd/MM/yyyy HH:mm:ss")}<#else>-</#if></div>
+                    </div>
+                    <div>
+                        <div class="small text-secondary">#i18n{platform.observability.table.duration}</div>
+                        <div class="fw-semibold">
+                            <#if execution.endTime?? && execution.startTime??>
+                                <#assign durationMs = (execution.endTime?long - execution.startTime?long) />
+                                <#if durationMs < 1000>
+                                    ${durationMs}ms
+                                <#elseif durationMs < 60000>
+                                    ${(durationMs/1000)?string("0.#")}s
+                                <#else>
+                                    ${(durationMs/60000)?int}m ${((durationMs%60000)/1000)?int}s
+                                </#if>
+                            <#else>
+                                -
+                            </#if>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="small text-secondary">#i18n{platform.observability.table.cost}</div>
+                        <div class="fw-semibold">${execution.totalCost!0} &euro;</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <#-- Node Executions Card -->
+    <div class="col-lg-8">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="d-flex align-items-center gap-2 mb-0">
+                    <i class="ti ti-topology-ring-3"></i>
+                    #i18n{platform.observability.node.executions}
+                </h5>
+            </div>
+            <div class="card-body">
+                <#if execution.nodeExecutions?? && execution.nodeExecutions?has_content>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    <th>#i18n{platform.observability.node.name}</th>
+                                    <th>#i18n{platform.observability.table.start}</th>
+                                    <th>#i18n{platform.observability.table.duration}</th>
+                                    <th>#i18n{platform.observability.table.cost}</th>
+                                    <th>#i18n{platform.observability.table.status}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <#list execution.nodeExecutions?sort_by("startTime") as node>
+                                    <tr>
+                                        <td>${node.nodeName}</td>
+                                        <td><#if node.startTime??>${node.startTime?string("HH:mm:ss")}<#else>-</#if></td>
+                                        <td>
+                                            <#if node.endTime?? && node.startTime??>
+                                                <#assign nodeDurationMs = (node.endTime?long - node.startTime?long) />
+                                                <#if nodeDurationMs < 1000>
+                                                    ${nodeDurationMs}ms
+                                                <#elseif nodeDurationMs < 60000>
+                                                    ${(nodeDurationMs/1000)?string("0.#")}s
+                                                <#else>
+                                                    ${(nodeDurationMs/60000)?int}m ${((nodeDurationMs%60000)/1000)?int}s
+                                                </#if>
+                                            <#else>
+                                                -
+                                            </#if>
+                                        </td>
+                                        <td><#if node.totalCost?? && node.totalCost != 0>${node.totalCost} &euro;<#else>-</#if></td>
+                                        <td>
+                                            <#switch node.status.value>
+                                                <#case "COMPLETED">
+                                                    <span class="badge text-bg-success">#i18n{platform.observability.status.completed}</span>
+                                                    <#break>
+                                                <#case "ERROR">
+                                                    <span class="badge text-bg-danger">#i18n{platform.observability.status.error}</span>
+                                                    <#break>
+                                                <#case "PENDING">
+                                                    <span class="badge text-bg-warning">#i18n{platform.observability.status.pending}</span>
+                                                    <#break>
+                                                <#case "RUNNING">
+                                                    <span class="badge text-bg-info">#i18n{platform.observability.status.running}</span>
+                                                    <#break>
+                                                <#default>
+                                                    <span class="badge text-bg-secondary">${node.status.value}</span>
+                                            </#switch>
+                                        </td>
+                                    </tr>
+                                    <#if node.errorMessage?? && node.errorMessage != "">
+                                        <tr>
+                                            <td colspan="5">
+                                                <div class="alert alert-danger mb-0">
+                                                    <i class="ti ti-alert-circle me-2"></i>${node.errorMessage}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </#if>
+                                </#list>
+                            </tbody>
+                        </table>
+                    </div>
+                <#else>
+                    <div class="d-flex flex-column align-items-center justify-content-center py-4 text-center">
+                        <p class="text-secondary mb-0">#i18n{platform.observability.node.empty}</p>
+                    </div>
+                </#if>
+            </div>
+        </div>
+    </div>
+</div>

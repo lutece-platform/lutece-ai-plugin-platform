@@ -1,0 +1,211 @@
+<#ftl output_format="HTML">
+<#include "commons/page_header_dataset.html">
+ <form method="post" action="jsp/site/Portal.jsp" enctype="multipart/form-data" id="createDocumentForm">
+ <input type="hidden" name="page" value="agent_dataset">
+ <input type="hidden" name="action" value="doCreateDocument">
+ <input type="hidden" name="dataset_id" value="${dataset.id}">
+ <input type="hidden" name="client_id" value="${client_id!}">
+
+ <#-- ===== Card Upload ===== -->
+ <div class="card mb-3">
+ <div class="card-body">
+ <h5 class="fw-bold mb-3"><i class="ti ti-upload me-2"></i>#i18n{platform.agent.create_document.upload}</h5>
+ <div class="mb-3">
+ <label for="folder_id" class="form-label">#i18n{platform.agent.create_document.targetFolder}</label>
+ <select class="form-select" id="folder_id" name="folder_id">
+ <option value=""<#if !(current_folder)??> selected</#if>>/</option>
+ <#if (all_folders!)?has_content>
+ <#list all_folders as option>
+ <option value="${option.id}"<#if (current_folder)?? && current_folder.id == option.id> selected</#if>>${option.path}</option>
+ </#list>
+ </#if>
+ </select>
+ </div>
+ <div class="mb-3">
+ <div id="uploadZone" class="border border-2 border-dashed rounded p-4 text-center">
+ <div class="dropdown d-inline-block">
+ <button type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown">
+ <i class="ti ti-upload me-1"></i>#i18n{platform.agent.create_document.addButton}
+ </button>
+ <ul class="dropdown-menu">
+ <li><a class="dropdown-item" href="#" data-pick="files"><i class="ti ti-file me-2"></i>#i18n{platform.agent.create_document.pickFiles}</a></li>
+ <li><a class="dropdown-item" href="#" data-pick="folder"><i class="ti ti-folder me-2"></i>#i18n{platform.agent.create_document.pickFolder}</a></li>
+ </ul>
+ </div>
+ <p class="text-muted small mt-2 mb-0">#i18n{platform.agent.create_document.dropHere}</p>
+ <input type="file" id="pickFiles" hidden multiple>
+ <input type="file" id="pickFolder" hidden webkitdirectory>
+ </div>
+ <input type="file" id="document_files" name="document_files" hidden>
+ <input type="hidden" id="document_paths" name="document_paths" value="[]">
+ <ul id="fileList" class="list-group list-group-flush mt-3 d-none"></ul>
+ <div class="form-text mt-2">#i18n{platform.agent.create_document.uploadConstraints}</div>
+ <div id="file-error" class="alert alert-danger d-none mt-2"></div>
+ </div>
+ <div class="form-check form-switch mb-2">
+ <input class="form-check-input" type="checkbox" role="switch" id="use_document_intelligence" name="use_document_intelligence" value="true" checked>
+ <label class="form-check-label" for="use_document_intelligence">#i18n{platform.agent.create_document.useDocumentIntelligenceCheckbox}</label>
+ </div>
+ <div id="document_intelligence_provider_section" class="mb-3">
+ <label for="document_intelligence_provider_id" class="form-label">#i18n{platform.agent.create_document.documentIntelligenceProvider}</label>
+ <select class="form-select" data-mu-toggle="select" id="document_intelligence_provider_id" name="document_intelligence_provider_id">
+ <option value="">#i18n{platform.agent.create_document.selectProvider}</option>
+ <#if document_intelligence_providers??>
+ <#list document_intelligence_providers as provider>
+ <option value="${provider.id}">${provider.providerName!}</option>
+ </#list>
+ </#if>
+ </select>
+ <#if !(document_intelligence_providers??) || document_intelligence_providers?size == 0>
+ <div class="form-text">#i18n{platform.agent.create_document.noDocumentIntelligenceProvider}</div>
+ </#if>
+ </div>
+ </div>
+ </div>
+
+ <#-- ===== Card Configuration ===== -->
+ <div class="card">
+ <div class="card-body">
+ <h5 class="fw-bold mb-3"><i class="ti ti-settings me-2"></i>#i18n{platform.agent.create_document.configuration}</h5>
+ <div class="row g-3">
+ <div class="col-md-4">
+ <label for="chunk_size" class="form-label">#i18n{platform.agent.model.entity.datasetDocument.attribute.chunkSize}</label>
+ <input type="number" class="form-control" id="chunk_size" name="chunk_size" value="1000" min="100" max="10000">
+ <div class="form-text">#i18n{platform.agent.model.entity.datasetDocument.attribute.chunkSize.help}</div>
+ </div>
+ <div class="col-md-4">
+ <label for="chunk_overlap" class="form-label">#i18n{platform.agent.model.entity.datasetDocument.attribute.chunkOverlap}</label>
+ <input type="number" class="form-control" id="chunk_overlap" name="chunk_overlap" value="200" min="0" max="1000">
+ <div class="form-text">#i18n{platform.agent.model.entity.datasetDocument.attribute.chunkOverlap.help}</div>
+ </div>
+ </div>
+ </div>
+ </div>
+
+ <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+ <a href="jsp/site/Portal.jsp?page=agent_dataset&view=viewDataset&dataset_id=${dataset.id}&client_id=${client_id!}" class="btn btn-light">
+ #i18n{portal.util.labelCancel}
+ </a>
+ <button type="submit" class="btn btn-primary" id="submit-btn">
+ <i class="ti ti-device-floppy me-1"></i>#i18n{platform.agent.create_document.buttonCreate}
+ </button>
+ </div>
+ </form>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+ const dz = document.getElementById('uploadZone');
+ const pickFiles = document.getElementById('pickFiles');
+ const pickFolder = document.getElementById('pickFolder');
+ const docInput = document.getElementById('document_files');
+ const pathsInput = document.getElementById('document_paths');
+ const list = document.getElementById('fileList');
+ const errorDiv = document.getElementById('file-error');
+ const submitBtn = document.getElementById('submit-btn');
+ const useDocIntel = document.getElementById('use_document_intelligence');
+ const docIntelSection = document.getElementById('document_intelligence_provider_section');
+ const MAX_TOTAL = 10 * 1024 * 1024;
+ const collected = [];
+
+ const toggleDocIntel = () => docIntelSection.classList.toggle('d-none', !useDocIntel.checked);
+ toggleDocIntel();
+ useDocIntel.addEventListener('change', toggleDocIntel);
+
+ const formatSize = (bytes) => (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+
+ const render = () => {
+ list.innerHTML = '';
+ list.classList.toggle('d-none', collected.length === 0);
+ let total = 0;
+ collected.forEach((entry, idx) => {
+ total += entry.file.size;
+ const li = document.createElement('li');
+ li.className = 'list-group-item d-flex justify-content-between align-items-center py-1';
+ const left = document.createElement('span');
+ left.className = 'text-truncate me-2';
+ left.innerHTML = '<i class="ti ti-file me-2"></i>' + entry.path + ' <span class="text-muted small">(' + formatSize(entry.file.size) + ')</span>';
+ const btn = document.createElement('button');
+ btn.type = 'button';
+ btn.className = 'btn btn-sm btn-link text-danger p-0';
+ btn.innerHTML = '<i class="ti ti-x"></i>';
+ btn.addEventListener('click', () => { collected.splice(idx, 1); render(); });
+ li.appendChild(left);
+ li.appendChild(btn);
+ list.appendChild(li);
+ });
+ errorDiv.classList.add('d-none');
+ errorDiv.innerHTML = '';
+ if (total > MAX_TOTAL) {
+ errorDiv.innerHTML = "#i18n{platform.agent.create_document.error.totalSizeExceeded}".replace('{0}', formatSize(total));
+ errorDiv.classList.remove('d-none');
+ submitBtn.disabled = true;
+ } else {
+ submitBtn.disabled = false;
+ }
+ };
+
+ const add = (file, path) => {
+ if (collected.some(e => e.path === path)) return;
+ collected.push({ file, path });
+ };
+
+ dz.querySelectorAll('[data-pick]').forEach(a =>
+ a.addEventListener('click', (e) => {
+ e.preventDefault();
+ (a.dataset.pick === 'folder' ? pickFolder : pickFiles).click();
+ })
+ );
+
+ pickFiles.addEventListener('change', () => {
+ [...pickFiles.files].forEach(f => add(f, f.name));
+ pickFiles.value = '';
+ render();
+ });
+
+ pickFolder.addEventListener('change', () => {
+ [...pickFolder.files].forEach(f => add(f, f.webkitRelativePath || f.name));
+ pickFolder.value = '';
+ render();
+ });
+
+ const walk = async (entry) => {
+ if (entry.isFile) {
+ const file = await new Promise(r => entry.file(r));
+ return [{ file, path: entry.fullPath.replace(/^\//, '') }];
+ }
+ const reader = entry.createReader();
+ const entries = await new Promise(r => reader.readEntries(r));
+ const nested = await Promise.all(entries.map(walk));
+ return nested.flat();
+ };
+
+ ['dragenter', 'dragover'].forEach(ev =>
+ dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.add('bg-light'); })
+ );
+ ['dragleave', 'drop'].forEach(ev =>
+ dz.addEventListener(ev, () => dz.classList.remove('bg-light'))
+ );
+ dz.addEventListener('drop', async (e) => {
+ e.preventDefault();
+ const items = [...e.dataTransfer.items].filter(i => i.kind === 'file');
+ const results = await Promise.all(items.map(i => walk(i.webkitGetAsEntry())));
+ results.flat().forEach(({ file, path }) => add(file, path));
+ render();
+ });
+
+ document.getElementById('createDocumentForm').addEventListener('submit', (e) => {
+ if (collected.length === 0) {
+ e.preventDefault();
+ errorDiv.textContent = "#i18n{platform.agent.create_document.error.noFileSelected}";
+ errorDiv.classList.remove('d-none');
+ return;
+ }
+ const dt = new DataTransfer();
+ collected.forEach(({ file }) => dt.items.add(file));
+ docInput.files = dt.files;
+ pathsInput.value = JSON.stringify(collected.map(({ path }) => path));
+ submitBtn.textContent = "#i18n{platform.agent.create_document.uploading}";
+ submitBtn.disabled = true;
+ });
+});
+</script>

@@ -1,0 +1,65 @@
+<#ftl output_format="HTML">
+
+<#-- Header -->
+<div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4">
+    <div>
+        <a href="jsp/site/Portal.jsp?page=platform&view=listClients" class="small text-secondary text-decoration-none d-flex align-items-center gap-1 mb-2">
+            <i class="ti ti-arrow-left"></i>#i18n{platform.xpage.action.back}
+        </a>
+        <h1 class="fw-bold mb-1">#i18n{platform.create_client.title}</h1>
+        <p class="text-secondary mb-0">#i18n{platform.create_client.description}</p>
+    </div>
+</div>
+
+<#include "commons/messages.html" />
+
+<form name="client" method="post" action="jsp/site/Portal.jsp">
+    <input type="hidden" name="page" value="platform" />
+    <input type="hidden" name="action" value="doCreateClient" />
+    <input type="hidden" name="token" value="${token}" />
+
+    <div class="row g-3">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="fw-bold mb-3"><i class="ti ti-building me-2"></i>#i18n{platform.create_client.title}</h5>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="name" class="form-label">#i18n{platform.model.entity.client.attribute.name} *</label>
+                            <input type="text" class="form-control" id="name" name="name" maxlength="255" value="${client.name!''}" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">#i18n{platform.model.entity.client.attribute.code}</label>
+                            <p class="form-text mb-0"><i class="ti ti-key me-1"></i>#i18n{platform.create_client.codeHelper}</p>
+                        </div>
+                        <div class="col-12">
+                            <label for="description" class="form-label">#i18n{platform.model.entity.client.attribute.description}</label>
+                            <textarea class="form-control" id="description" name="description" rows="3">${client.description!''}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="fw-bold mb-3">#i18n{platform.observability.table.status}</h5>
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <div class="fw-medium">#i18n{platform.model.entity.client.attribute.active}</div>
+                            <small class="text-secondary">#i18n{platform.create_client.activeHelper}</small>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input type="checkbox" class="form-check-input" role="switch" id="active" name="active" value="1" <#if client.active!false>checked</#if> />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+        <a href="jsp/site/Portal.jsp?page=platform&view=listClients" class="btn btn-light">#i18n{portal.util.labelCancel}</a>
+        <button type="submit" class="btn btn-primary"><i class="ti ti-device-floppy me-1"></i>#i18n{portal.util.labelValidate}</button>
+    </div>
+</form>

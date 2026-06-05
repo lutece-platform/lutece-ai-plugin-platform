@@ -1,0 +1,232 @@
+<#ftl output_format="HTML">
+<#include "commons/page_header_pipeline.html">
+<#include "commons/api_key_playground.html" />
+
+<div class="row g-4">
+
+ <@apiKeyAuthCard/>
+
+ <div class="col-12">
+  <div class="card">
+   <div class="card-header d-flex align-items-center gap-2">
+    <i class="ti ti-world text-primary"></i>
+    <strong>#i18n{platform.agent.api.section.baseUrl}</strong>
+   </div>
+   <div class="card-body">
+    <pre class="border rounded p-3 bg-body-tertiary small mb-0">${app_base_url!}rest/platform/agent/api/pipelines</pre>
+   </div>
+  </div>
+ </div>
+
+ <#-- GET / -->
+ <div class="col-12">
+  <div class="card">
+   <div class="card-header d-flex align-items-center gap-2">
+    <span class="badge text-bg-success">GET</span>
+    <code>/</code>
+    <span class="text-secondary small">#i18n{platform.api_pipeline.list.description}</span>
+   </div>
+   <div class="card-body">
+    <pre class="border rounded p-3 bg-body-tertiary small" id="curl-pipelines">curl -s -X GET "${app_base_url!}rest/platform/agent/api/pipelines/" \
+  -H "X-Client-Code: ${masked_code}"</pre>
+    <div class="d-flex gap-2 mt-2">
+     <button class="btn btn-sm btn-light" onclick="copyToClipboard('curl-pipelines', this)">
+      <i class="ti ti-copy me-1"></i>#i18n{platform.agent.api.copy}
+     </button>
+     <button class="btn btn-sm btn-primary" onclick="runApiFetch('result-pipelines', '${app_base_url!}rest/platform/agent/api/pipelines/', 'GET', {}, null)">
+      <i class="ti ti-player-play me-1"></i>#i18n{platform.agent.api.test}
+     </button>
+    </div>
+    <div id="result-pipelines" class="mt-2 d-none">
+     <pre class="border rounded p-2 small bg-body-tertiary" style="max-height:300px;overflow:auto"></pre>
+    </div>
+   </div>
+  </div>
+ </div>
+
+ <#-- GET /{id}/required-inputs -->
+ <div class="col-12">
+  <div class="card">
+   <div class="card-header d-flex align-items-center gap-2">
+    <span class="badge text-bg-success">GET</span>
+    <code>/${pipeline.id}/required-inputs</code>
+    <span class="text-secondary small">#i18n{platform.api_pipeline.requiredInputs.description}</span>
+   </div>
+   <div class="card-body">
+    <pre class="border rounded p-3 bg-body-tertiary small" id="curl-inputs">curl -s -X GET "${app_base_url!}rest/platform/agent/api/pipelines/${pipeline.id}/required-inputs" \
+  -H "X-Client-Code: ${masked_code}"</pre>
+    <div class="d-flex gap-2 mt-2">
+     <button class="btn btn-sm btn-light" onclick="copyToClipboard('curl-inputs', this)">
+      <i class="ti ti-copy me-1"></i>#i18n{platform.agent.api.copy}
+     </button>
+     <button class="btn btn-sm btn-primary" onclick="runApiFetch('result-inputs', '${app_base_url!}rest/platform/agent/api/pipelines/${pipeline.id}/required-inputs', 'GET', {}, null)">
+      <i class="ti ti-player-play me-1"></i>#i18n{platform.agent.api.test}
+     </button>
+    </div>
+    <div id="result-inputs" class="mt-2 d-none">
+     <pre class="border rounded p-2 small bg-body-tertiary" style="max-height:300px;overflow:auto"></pre>
+    </div>
+   </div>
+  </div>
+ </div>
+
+ <#-- GET /{id}/required-inputs/version/{versionName} -->
+ <div class="col-12">
+  <div class="card">
+   <div class="card-header d-flex align-items-center gap-2">
+    <span class="badge text-bg-success">GET</span>
+    <code>/${pipeline.id}/required-inputs/version/{versionName}</code>
+    <span class="text-secondary small">#i18n{platform.api_pipeline.requiredInputsVersion.description}</span>
+   </div>
+   <div class="card-body">
+    <pre class="border rounded p-3 bg-body-tertiary small" id="curl-inputs-version">curl -s -X GET "${app_base_url!}rest/platform/agent/api/pipelines/${pipeline.id}/required-inputs/version/{versionName}" \
+  -H "X-Client-Code: ${masked_code}"</pre>
+    <div class="d-flex gap-2 mt-2">
+     <button class="btn btn-sm btn-light" onclick="copyToClipboard('curl-inputs-version', this)">
+      <i class="ti ti-copy me-1"></i>#i18n{platform.agent.api.copy}
+     </button>
+    </div>
+   </div>
+  </div>
+ </div>
+
+ <#-- GET /{id}/outputs -->
+ <div class="col-12">
+  <div class="card">
+   <div class="card-header d-flex align-items-center gap-2">
+    <span class="badge text-bg-success">GET</span>
+    <code>/${pipeline.id}/outputs</code>
+    <span class="text-secondary small">#i18n{platform.api_pipeline.outputs.description}</span>
+   </div>
+   <div class="card-body">
+    <pre class="border rounded p-3 bg-body-tertiary small" id="curl-outputs">curl -s -X GET "${app_base_url!}rest/platform/agent/api/pipelines/${pipeline.id}/outputs" \
+  -H "X-Client-Code: ${masked_code}"</pre>
+    <div class="d-flex gap-2 mt-2">
+     <button class="btn btn-sm btn-light" onclick="copyToClipboard('curl-outputs', this)">
+      <i class="ti ti-copy me-1"></i>#i18n{platform.agent.api.copy}
+     </button>
+     <button class="btn btn-sm btn-primary" onclick="runApiFetch('result-outputs', '${app_base_url!}rest/platform/agent/api/pipelines/${pipeline.id}/outputs', 'GET', {}, null)">
+      <i class="ti ti-player-play me-1"></i>#i18n{platform.agent.api.test}
+     </button>
+    </div>
+    <div id="result-outputs" class="mt-2 d-none">
+     <pre class="border rounded p-2 small bg-body-tertiary" style="max-height:300px;overflow:auto"></pre>
+    </div>
+   </div>
+  </div>
+ </div>
+
+ <#-- GET /{id}/outputs/version/{versionName} -->
+ <div class="col-12">
+  <div class="card">
+   <div class="card-header d-flex align-items-center gap-2">
+    <span class="badge text-bg-success">GET</span>
+    <code>/${pipeline.id}/outputs/version/{versionName}</code>
+    <span class="text-secondary small">#i18n{platform.api_pipeline.outputsVersion.description}</span>
+   </div>
+   <div class="card-body">
+    <pre class="border rounded p-3 bg-body-tertiary small" id="curl-outputs-version">curl -s -X GET "${app_base_url!}rest/platform/agent/api/pipelines/${pipeline.id}/outputs/version/{versionName}" \
+  -H "X-Client-Code: ${masked_code}"</pre>
+    <div class="d-flex gap-2 mt-2">
+     <button class="btn btn-sm btn-light" onclick="copyToClipboard('curl-outputs-version', this)">
+      <i class="ti ti-copy me-1"></i>#i18n{platform.agent.api.copy}
+     </button>
+    </div>
+   </div>
+  </div>
+ </div>
+
+ <#-- POST /{id}/execute -->
+ <div class="col-12">
+  <div class="card">
+   <div class="card-header d-flex align-items-center gap-2">
+    <span class="badge text-bg-warning text-dark">POST</span>
+    <code>/${pipeline.id}/execute</code>
+    <span class="text-secondary small">#i18n{platform.api_pipeline.execute.description}</span>
+   </div>
+   <div class="card-body">
+    <pre class="border rounded p-3 bg-body-tertiary small" id="curl-execute">curl -s -X POST "${app_base_url!}rest/platform/agent/api/pipelines/${pipeline.id}/execute" \
+  -H "X-Client-Code: ${masked_code}" \
+  -H "Content-Type: application/json" \
+  -d '{"userId":"user-1","inputs":{}}'</pre>
+    <div class="d-flex gap-2 mt-2">
+     <button class="btn btn-sm btn-light" onclick="copyToClipboard('curl-execute', this)">
+      <i class="ti ti-copy me-1"></i>#i18n{platform.agent.api.copy}
+     </button>
+     <button class="btn btn-sm btn-primary" onclick="runApiFetch('result-execute', '${app_base_url!}rest/platform/agent/api/pipelines/${pipeline.id}/execute', 'POST', {'Content-Type':'application/json'}, JSON.stringify({userId:'user-1',inputs:{}}))">
+      <i class="ti ti-player-play me-1"></i>#i18n{platform.agent.api.test}
+     </button>
+    </div>
+    <div id="result-execute" class="mt-2 d-none">
+     <pre class="border rounded p-2 small bg-body-tertiary" style="max-height:300px;overflow:auto"></pre>
+    </div>
+   </div>
+  </div>
+ </div>
+
+ <#-- GET /{id}/execution/{executionId} -->
+ <div class="col-12">
+  <div class="card">
+   <div class="card-header d-flex align-items-center gap-2">
+    <span class="badge text-bg-success">GET</span>
+    <code>/${pipeline.id}/execution/{executionId}</code>
+    <span class="text-secondary small">#i18n{platform.api_pipeline.executionDetail.description}</span>
+   </div>
+   <div class="card-body">
+    <pre class="border rounded p-3 bg-body-tertiary small" id="curl-exec-detail">curl -s -X GET "${app_base_url!}rest/platform/agent/api/pipelines/${pipeline.id}/execution/{executionId}" \
+  -H "X-Client-Code: ${masked_code}"</pre>
+    <div class="d-flex gap-2 mt-2">
+     <button class="btn btn-sm btn-light" onclick="copyToClipboard('curl-exec-detail', this)">
+      <i class="ti ti-copy me-1"></i>#i18n{platform.agent.api.copy}
+     </button>
+    </div>
+   </div>
+  </div>
+ </div>
+
+ <#-- GET /{id}/execution/{executionId}/events -->
+ <div class="col-12">
+  <div class="card">
+   <div class="card-header d-flex align-items-center gap-2">
+    <span class="badge text-bg-success">GET</span>
+    <code>/${pipeline.id}/execution/{executionId}/events</code>
+    <span class="text-secondary small">#i18n{platform.api_pipeline.executionEvents.description}</span>
+   </div>
+   <div class="card-body">
+    <pre class="border rounded p-3 bg-body-tertiary small" id="curl-exec-events">curl -N -X GET "${app_base_url!}rest/platform/agent/api/pipelines/${pipeline.id}/execution/{executionId}/events" \
+  -H "X-Client-Code: ${masked_code}" \
+  -H "Accept: text/event-stream"</pre>
+    <div class="d-flex gap-2 mt-2">
+     <button class="btn btn-sm btn-light" onclick="copyToClipboard('curl-exec-events', this)">
+      <i class="ti ti-copy me-1"></i>#i18n{platform.agent.api.copy}
+     </button>
+    </div>
+   </div>
+  </div>
+ </div>
+
+ <#-- POST /{id}/executions -->
+ <div class="col-12">
+  <div class="card">
+   <div class="card-header d-flex align-items-center gap-2">
+    <span class="badge text-bg-warning text-dark">POST</span>
+    <code>/${pipeline.id}/executions</code>
+    <span class="text-secondary small">#i18n{platform.api_pipeline.userExecutions.description}</span>
+   </div>
+   <div class="card-body">
+    <pre class="border rounded p-3 bg-body-tertiary small" id="curl-user-execs">curl -s -X POST "${app_base_url!}rest/platform/agent/api/pipelines/${pipeline.id}/executions" \
+  -H "X-Client-Code: ${masked_code}" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id":"user-1"}'</pre>
+    <div class="d-flex gap-2 mt-2">
+     <button class="btn btn-sm btn-light" onclick="copyToClipboard('curl-user-execs', this)">
+      <i class="ti ti-copy me-1"></i>#i18n{platform.agent.api.copy}
+     </button>
+    </div>
+   </div>
+  </div>
+ </div>
+
+</div>
+
+<@apiKeyPlaygroundJs/>

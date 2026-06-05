@@ -1,0 +1,377 @@
+<#ftl output_format="HTML">
+
+<script src="js/marked.min.js"></script>
+<style>
+.typing-dot {
+ width: 6px; height: 6px; border-radius: 50%; background: #6c757d; display: inline-block;
+ animation: typingBounce 1.2s infinite ease-in-out;
+}
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typingBounce {
+ 0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+ 30% { transform: translateY(-4px); opacity: 1; }
+}
+.stream-cursor {
+ display: inline; animation: cursorBlink 0.6s infinite; color: var(--bs-primary); font-weight: bold;
+}
+@keyframes cursorBlink {
+ 0%, 100% { opacity: 1; }
+ 50% { opacity: 0; }
+}
+</style>
+
+<#include "commons/page_header_decision_tree.html">
+
+<div class="d-flex justify-content-end gap-2 mb-3">
+ <button type="button" class="btn btn-light" id="toggle_debug">
+ <i class="ti ti-bug me-1"></i>Debug
+ </button>
+ <button type="button" class="btn btn-primary" id="btn_restart">
+ <i class="ti ti-refresh me-1"></i>#i18n{platform.agent.decision_tree.action.restart}
+ </button>
+</div>
+
+<div id="chat_container">
+ <div id="chat_messages" class="py-3">
+ </div>
+</div>
+
+<#assign endMessageValue = (decision_tree.endMessage!)?has_content?then(decision_tree.endMessage, "#i18n{platform.agent.decision_tree.preview.endReached}")>
+<script>
+<#outputformat "plainText">
+var treeData = {
+ treeId: ${decision_tree.id},
+ clientId: "${client_id!}",
+ welcomeMessage: "${decision_tree.welcomeMessage!?js_string}",
+ endMessage: "${endMessageValue?js_string}",
+ logoBase64: "${decision_tree.logoBase64!?js_string}"
+};
+</#outputformat>
+
+(function() {
+ var chatMessages = document.getElementById('chat_messages');
+ var btnRestart = document.getElementById('btn_restart');
+ var toggleDebug = document.getElementById('toggle_debug');
+ var TYPING_SPEED = 15;
+ var TYPING_DELAY = 400;
+ var BASE_URL = 'jsp/site/Portal.jsp?page=agent_bot';
+ var ADMIN_API_BASE = 'rest/platform/agent/admin/decisiontrees/' + treeData.treeId;
+
+ var navigationHistory = [];
+ var conversationId = null;
+ var debugActive = false;
+ var botAvatarHtml = treeData.logoBase64
+  ? '<img src="' + treeData.logoBase64 + '" alt="" class="rounded-circle object-fit-cover flex-shrink-0" style="width:32px;height:32px">'
+  : '<div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center flex-shrink-0" style="width:32px;height:32px"><i class="ti ti-binary-tree" style="font-size:1rem"></i></div>';
+ function isDebug() { return debugActive; }
+
+ function generateUUID() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+   var r = Math.random() * 16 | 0;
+   return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+  });
+ }
+
+ async function fetchStartNode() {
+  var resp = await fetch(ADMIN_API_BASE + '/start?conversationId=' + conversationId);
+  var json = await resp.json();
+  if (json.status !== 'OK') return null;
+  return json.result.node;
+ }
+
+ async function fetchNode(nodeId, transitionId) {
+  var url = ADMIN_API_BASE + '/nodes/' + nodeId + '?conversationId=' + conversationId;
+  if (transitionId) url += '&transitionId=' + transitionId;
+  var resp = await fetch(url);
+  var json = await resp.json();
+  if (json.status !== 'OK') return null;
+  return json.result.node;
+ }
+
+ function scrollToBottom() {
+  window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+ }
+
+ function nodeEditUrl(nodeId) {
+  return BASE_URL + '&view=modifyDecisionNode&node_id=' + nodeId + '&tree_id=' + treeData.treeId + '&client_id=' + treeData.clientId;
+ }
+
+ function addDebugCard(html) {
+  var div = document.createElement('div');
+  div.className = 'card mb-2 debug-item';
+  div.innerHTML = '<div class="card-body py-2 px-3">' + html + '</div>';
+  if (!isDebug()) div.classList.add('d-none');
+  chatMessages.appendChild(div);
+ }
+
+ function addDebugNode(node) {
+  var isEnd = !node.transitions || node.transitions.length === 0;
+  var typeBadge = isEnd ? 'bg-danger' : 'bg-secondary';
+  addDebugCard(
+   '<div class="d-flex align-items-center justify-content-between gap-2">'
+   + '<div class="d-flex align-items-center gap-2">'
+   + '<span class="badge ' + typeBadge + '">' + (isEnd ? "#i18n{platform.decision_tree_conversations.node.end}" : "#i18n{platform.decision_tree.preview.debug.node}") + '</span>'
+   + '<span class="small"><i class="ti ti-binary-tree me-1"></i><strong>' + escapeHtml(node.title || "#i18n{platform.decision_tree.preview.debug.untitled}") + '</strong> <span class="text-muted">#' + node.id + '</span></span>'
+   + '</div>'
+   + '<a href="' + nodeEditUrl(node.id) + '" class="btn btn-light btn-sm"><i class="ti ti-pencil me-1"></i>' + "#i18n{platform.decision_tree.preview.debug.edit}" + '</a>'
+   + '</div>'
+  );
+ }
+
+ function addDebugTransition(type, transitions) {
+  if (!transitions || transitions.length === 0) return;
+  var typeBadge = type === 'AUTO' ? 'bg-warning text-dark' : 'bg-info text-dark';
+  var parts = transitions.map(function(t) {
+   return '<span class="badge bg-light text-dark border">t#' + t.id + '</span> '
+    + (t.label ? escapeHtml(t.label) : '<em class="text-muted">auto</em>') + ' <i class="ti ti-arrow-right"></i> node#' + t.targetNodeId;
+  });
+  addDebugCard(
+   '<div class="d-flex align-items-center gap-2 small">'
+   + '<span class="badge ' + typeBadge + '">' + type + '</span>'
+   + '<span>' + parts.join(' <span class="text-muted">|</span> ') + '</span>'
+   + '</div>'
+  );
+ }
+
+ function applyDebugSpacing() {
+  document.querySelectorAll('.chat-item').forEach(function(el) {
+   el.classList.toggle('my-5', debugActive);
+   el.classList.toggle('mb-3', !debugActive);
+  });
+ }
+ toggleDebug.addEventListener('click', function() {
+  debugActive = !debugActive;
+  toggleDebug.classList.toggle('active', debugActive);
+  document.querySelectorAll('.debug-item').forEach(function(el) { el.classList.toggle('d-none', !debugActive); });
+  applyDebugSpacing();
+ });
+
+ function createBotBubble() {
+  var div = document.createElement('div');
+  div.className = 'd-flex chat-item ' + (debugActive ? 'my-5' : 'mb-3');
+  div.style.opacity = '0';
+  div.style.transform = 'translateY(8px)';
+  div.style.transition = 'opacity 0.2s, transform 0.2s';
+  div.innerHTML = '<div class="d-flex align-items-start gap-2" style="max-width: 80%;">'
+   + botAvatarHtml
+   + '<div class="card"><div class="card-body py-2 px-3"><span class="msg-content"></span></div></div></div>';
+  chatMessages.appendChild(div);
+  requestAnimationFrame(function() {
+   div.style.opacity = '1';
+   div.style.transform = 'translateY(0)';
+  });
+  scrollToBottom();
+  return div.querySelector('.msg-content');
+ }
+
+ function showTypingIndicator() {
+  var div = document.createElement('div');
+  div.className = 'd-flex mb-3';
+  div.id = 'typing_indicator';
+  div.innerHTML = '<div class="d-flex align-items-start gap-2">'
+   + botAvatarHtml
+   + '<div class="card"><div class="card-body py-2 px-3">'
+   + '<div class="d-flex gap-1 align-items-center" style="height: 1.2em;">'
+   + '<span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>'
+   + '</div></div></div></div>';
+  chatMessages.appendChild(div);
+  scrollToBottom();
+ }
+
+ function removeTypingIndicator() {
+  var el = document.getElementById('typing_indicator');
+  if (el) el.remove();
+ }
+
+ function streamBotMessage(html) {
+  return new Promise(function(resolve) {
+   showTypingIndicator();
+   setTimeout(function() {
+    removeTypingIndicator();
+    var contentEl = createBotBubble();
+    var tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    var plainText = tmp.textContent || '';
+    if (plainText.length < 3) {
+     contentEl.innerHTML = html;
+     scrollToBottom();
+     resolve();
+     return;
+    }
+    contentEl.innerHTML = '<span class="stream-text"></span><span class="stream-cursor">|</span>';
+    var streamEl = contentEl.querySelector('.stream-text');
+    var cursorEl = contentEl.querySelector('.stream-cursor');
+    var i = 0;
+    var interval = setInterval(function() {
+     var chunk = Math.min(3, plainText.length - i);
+     streamEl.textContent += plainText.substring(i, i + chunk);
+     i += chunk;
+     scrollToBottom();
+     if (i >= plainText.length) {
+      clearInterval(interval);
+      cursorEl.remove();
+      contentEl.innerHTML = html;
+      scrollToBottom();
+      resolve();
+     }
+    }, TYPING_SPEED);
+   }, TYPING_DELAY);
+  });
+ }
+
+ function addBotMessageInstant(html) {
+  var contentEl = createBotBubble();
+  contentEl.innerHTML = html;
+  scrollToBottom();
+ }
+
+ function addUserMessage(text) {
+  var div = document.createElement('div');
+  div.className = 'd-flex justify-content-end chat-item ' + (debugActive ? 'my-5' : 'mb-3');
+  div.style.opacity = '0';
+  div.style.transform = 'translateY(8px)';
+  div.style.transition = 'opacity 0.2s, transform 0.2s';
+  div.innerHTML = '<div style="max-width: 80%;"><div class="card bg-primary text-white"><div class="card-body py-2 px-3">'
+   + escapeHtml(text) + '</div></div></div>';
+  chatMessages.appendChild(div);
+  requestAnimationFrame(function() {
+   div.style.opacity = '1';
+   div.style.transform = 'translateY(0)';
+  });
+  scrollToBottom();
+ }
+
+ function addTransitionButtons(transitions, node) {
+  var hasBack = node.showBackButton && (node.backTargetNodeId || navigationHistory.length > 1);
+  var hasTransitions = transitions && transitions.some(function(t) { return t.label; });
+  if (!hasBack && !hasTransitions) return;
+
+  if (hasTransitions) addDebugTransition('CHOIX', transitions);
+
+  var div = document.createElement('div');
+  div.className = 'd-flex flex-wrap gap-2 ms-5 chat-item ' + (debugActive ? 'my-5' : 'mb-3');
+  div.id = 'transition_buttons';
+  div.style.opacity = '0';
+  div.style.transform = 'translateY(8px)';
+  div.style.transition = 'opacity 0.3s, transform 0.3s';
+
+  if (transitions) {
+   transitions.forEach(function(t) {
+    if (!t.label) return;
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn btn-light';
+    btn.textContent = t.label;
+    btn.addEventListener('click', async function() {
+     document.getElementById('transition_buttons')?.remove();
+     addUserMessage(t.label);
+     await renderNode(t.targetNodeId, false, null, t.id);
+    });
+    div.appendChild(btn);
+   });
+  }
+
+  if (hasBack) {
+   var backBtn = document.createElement('button');
+   backBtn.type = 'button';
+   backBtn.className = 'btn btn-light';
+   backBtn.innerHTML = '<i class="ti ti-arrow-left me-1"></i>#i18n{platform.agent.decision_tree.preview.back}';
+   backBtn.addEventListener('click', async function() {
+    document.getElementById('transition_buttons')?.remove();
+    if (node.backTargetNodeId) {
+     var targetIdx = navigationHistory.indexOf(node.backTargetNodeId);
+     if (targetIdx !== -1) {
+      navigationHistory = navigationHistory.slice(0, targetIdx + 1);
+     } else {
+      navigationHistory.push(node.backTargetNodeId);
+     }
+     await renderNode(node.backTargetNodeId, true);
+    } else {
+     navigationHistory.pop();
+     var prevNodeId = navigationHistory[navigationHistory.length - 1];
+     await renderNode(prevNodeId, true);
+    }
+   });
+   div.appendChild(backBtn);
+  }
+
+  chatMessages.appendChild(div);
+  requestAnimationFrame(function() {
+   div.style.opacity = '1';
+   div.style.transform = 'translateY(0)';
+  });
+  scrollToBottom();
+ }
+
+ function renderContentHtml(text) {
+  if (typeof marked !== 'undefined' && text) {
+   return '<div class="mb-0">' + marked.parse(text) + '</div>';
+  }
+  return '<p class="mb-0">' + escapeHtml(text || '') + '</p>';
+ }
+
+ async function renderNode(nodeId, isBack, prefetchedNode, transitionId) {
+  var node = prefetchedNode || await fetchNode(nodeId, transitionId);
+  if (!node) {
+   addBotMessageInstant(`<p class="mb-0"><i class="ti ti-alert-triangle me-1"></i>#i18n{platform.agent.decision_tree.preview.nodeNotFound}</p>`);
+   return;
+  }
+
+  if (!isBack) navigationHistory.push(node.id);
+
+  addDebugNode(node);
+
+  if (node.content) {
+   await streamBotMessage(renderContentHtml(node.content));
+  }
+
+  var isEnd = !node.transitions || node.transitions.length === 0;
+  if (isEnd) {
+   await streamBotMessage('<p class="mb-0 fw-medium"><i class="ti ti-check me-1"></i>' + escapeHtml(treeData.endMessage) + '</p>');
+   if (node.showBackButton && (node.backTargetNodeId || navigationHistory.length > 1)) {
+    addTransitionButtons([], node);
+   }
+   return;
+  }
+
+  // Auto-transition: single unlabeled transition
+  if (node.transitions.length === 1 && !node.transitions[0].label) {
+   addDebugTransition('AUTO', node.transitions);
+   await renderNode(node.transitions[0].targetNodeId);
+   return;
+  }
+
+  addTransitionButtons(node.transitions, node);
+ }
+
+ async function startTree() {
+  chatMessages.innerHTML = '';
+  navigationHistory = [];
+  conversationId = generateUUID();
+
+  addDebugCard('<div class="d-flex align-items-center gap-2 small"><span class="badge bg-secondary">' + "#i18n{platform.decision_tree.preview.debug.start}" + '</span> <span>tree#' + treeData.treeId + ' &mdash; conversation#' + conversationId + '</span></div>');
+
+  if (treeData.welcomeMessage) {
+   await streamBotMessage('<p class="mb-0">' + escapeHtml(treeData.welcomeMessage) + '</p>');
+  }
+
+  var startNode = await fetchStartNode();
+  if (!startNode) {
+   addBotMessageInstant(`<p class="mb-0 text-warning"><i class="ti ti-alert-triangle me-1"></i>#i18n{platform.agent.decision_tree.preview.noStartNode}</p>`);
+   return;
+  }
+
+  await renderNode(null, false, startNode);
+ }
+
+ function escapeHtml(text) {
+  var div = document.createElement('div');
+  div.appendChild(document.createTextNode(text));
+  return div.innerHTML;
+ }
+
+ btnRestart.addEventListener('click', startTree);
+ startTree();
+})();
+</script>

@@ -1,0 +1,10 @@
+target
+.vscode
+.claude
+.token-counter
+CLAUDE.md
+dev
+load-tests
+logs
+java.io.tmpdir
+.github

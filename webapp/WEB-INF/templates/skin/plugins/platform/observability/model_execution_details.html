@@ -1,0 +1,337 @@
+<#ftl output_format="HTML">
+<#assign resourceItem = (metrics.resourceItems[execution.resourceType][execution.resourceId])!>
+<#assign resourceName = resourceItem.name!(execution.resourceName!execution.resourceId)>
+<#if resource_type?? && resource_id??>
+ <#assign backUrl = "jsp/site/Portal.jsp?page=agent_observability&view=resourceObservability&resource_type=${resource_type}&resource_id=${resource_id}&client_id=${client.id}" />
+<#else>
+ <#assign backUrl = "jsp/site/Portal.jsp?page=platform&view=clientObservability&id=${client.id}" />
+</#if>
+
+<#-- Parse input/output JSON safely -->
+<#assign inputJson = {}>
+<#assign outputJson = {}>
+<#attempt>
+ <#assign inputJson = (execution.inputData!"")?replace(':null', ':""')?replace(': null', ':""')?eval>
+<#recover></#attempt>
+<#attempt>
+ <#assign outputJson = (execution.outputData!"")?replace(':null', ':""')?replace(': null', ':""')?eval>
+<#recover></#attempt>
+
+<#-- Compute totals from nodes -->
+<#assign totalInputTokens = 0>
+<#assign totalOutputTokens = 0>
+<#if outputJson.attributes??>
+ <#if outputJson.attributes.inputTokens??><#assign totalInputTokens = outputJson.attributes.inputTokens></#if>
+ <#if outputJson.attributes.outputTokens??><#assign totalOutputTokens = outputJson.attributes.outputTokens></#if>
+</#if>
+
+<#-- Compute duration -->
+<#assign durationMs = 0>
+<#if execution.endTime?? && execution.startTime??>
+ <#assign durationMs = (execution.endTime?long - execution.startTime?long)>
+</#if>
+<#macro durationFormat ms>
+ <#if ms < 1000>${ms}ms<#elseif ms < 60000>${(ms/1000)?string("0.#")}s<#else>${(ms/60000)?int}m ${((ms%60000)/1000)?int}s</#if>
+</#macro>
+
+<#-- Status badge macro -->
+<#macro statusBadge status>
+ <#switch status.value>
+ <#case "COMPLETED"><span class="badge text-bg-success">#i18n{platform.observability.status.completed}</span><#break>
+ <#case "ERROR"><span class="badge text-bg-danger">#i18n{platform.observability.status.error}</span><#break>
+ <#case "PENDING"><span class="badge text-bg-warning">#i18n{platform.observability.status.pending}</span><#break>
+ <#case "RUNNING"><span class="badge text-bg-primary">#i18n{platform.observability.status.running}</span><#break>
+ <#case "CANCELLED"><span class="badge text-bg-secondary">#i18n{platform.observability.status.cancelled}</span><#break>
+ <#default><span class="badge text-bg-light">${status.value}</span>
+ </#switch>
+</#macro>
+
+<#-- Extract model response from nodes -->
+<#assign modelResponse = "">
+<#if execution.nodeExecutions??>
+ <#list execution.nodeExecutions as node>
+ <#if node.outputData?? && node.outputData?has_content>
+ <#attempt>
+ <#assign nOut = node.outputData?replace(':null', ':""')?replace(': null', ':""')?eval>
+ <#if nOut.attributes?? && nOut.attributes.response?? && nOut.attributes.response?has_content && nOut.attributes.response?length gt modelResponse?length>
+ <#assign modelResponse = nOut.attributes.response>
+ </#if>
+ <#recover></#attempt>
+ </#if>
+ </#list>
+</#if>
+
+<#if header_current_view??>
+ <#-- Layout with page header (AgentXPage) -->
+ <div class="px-3 mt-3">
+ <#if resource_type! == "BOT"><#include "../commons/page_header_bot.html">
+ <#elseif resource_type! == "PIPELINE"><#include "../commons/page_header_pipeline.html">
+ <#elseif resource_type! == "DATASET"><#include "../commons/page_header_dataset.html">
+ <#elseif resource_type! == "VISION"><#include "../commons/page_header_vision.html">
+ <#elseif resource_type! == "MODEL"><#include "../commons/page_header_model.html">
+ </#if>
+ <div>
+ <div>
+<#else>
+ <#-- Layout standalone (PlatformXPage) -->
+ <div class="px-3 mt-4">
+ <div>
+ <div>
+</#if>
+
+ <#-- Header -->
+ <div class="mb-4">
+ <#if !(header_current_view??)>
+ <a href="${backUrl}" class="text-secondary small d-inline-block mb-2 text-decoration-underline">
+ <i class="ti ti-arrow-left"></i>#i18n{platform.xpage.action.back}
+ </a>
+ </#if>
+ <div class="d-flex align-items-center">
+ <h2 class="fw-bold h4">${resourceName}</h2>
+ <span class="ms-auto"><@statusBadge status=execution.status /></span>
+ </div>
+ <p class="text-secondary small mt-1">
+ <i class="ti ti-brain"></i>
+ #i18n{platform.observability.model.label}
+ <#if inputJson.attributes?? && inputJson.attributes.model??>
+ <span class="mx-1">&middot;</span>
+ <span class="badge text-bg-secondary">${inputJson.attributes.model}</span>
+ </#if>
+ <span class="mx-1">&middot;</span>
+ <#if execution.startTime??>${execution.startTime?string("dd/MM/yyyy HH:mm:ss")}</#if>
+ <span class="mx-1">&middot;</span>
+ <code class="small">${execution.executionId}</code>
+ </p>
+ </div>
+
+ <#-- Metrics row -->
+ <div class="row g-3 mb-3">
+ <div class="col-6 col-lg-3 d-flex">
+ <div class="card flex-fill">
+ <div class="card-body text-center py-3">
+ <div class="text-secondary small mb-1"><i class="ti ti-clock"></i> #i18n{platform.observability.table.duration}</div>
+ <div class="fw-bold fs-5"><@durationFormat ms=durationMs /></div>
+ </div>
+ </div>
+ </div>
+ <div class="col-6 col-lg-3 d-flex">
+ <div class="card flex-fill">
+ <div class="card-body text-center py-3">
+ <div class="text-secondary small mb-1"><i class="ti ti-currency-euro"></i> #i18n{platform.observability.table.cost}</div>
+ <div class="fw-bold fs-5">${(execution.totalCost!0)?string["0.####"]} &euro;</div>
+ </div>
+ </div>
+ </div>
+ <div class="col-6 col-lg-3 d-flex">
+ <div class="card flex-fill">
+ <div class="card-body text-center py-3">
+ <div class="text-secondary small mb-1"><i class="ti ti-arrow-down"></i> #i18n{platform.observability.metric.tokensIn}</div>
+ <div class="fw-bold fs-5"><#if totalInputTokens gt 0>${totalInputTokens?string.computer}<#else>-</#if></div>
+ </div>
+ </div>
+ </div>
+ <div class="col-6 col-lg-3 d-flex">
+ <div class="card flex-fill">
+ <div class="card-body text-center py-3">
+ <div class="text-secondary small mb-1"><i class="ti ti-arrow-up"></i> #i18n{platform.observability.metric.tokensOut}</div>
+ <div class="fw-bold fs-5"><#if totalOutputTokens gt 0>${totalOutputTokens?string.computer}<#else>-</#if></div>
+ </div>
+ </div>
+ </div>
+ </div>
+
+ <#-- Error alert -->
+ <#if execution.errorMessage?? && execution.errorMessage?has_content>
+ <div class="alert alert-danger mb-4">${execution.errorMessage}</div>
+ </#if>
+
+ <#-- Conversation: Prompt & Response -->
+ <div class="card mb-4">
+ <div class="card-body p-3">
+ <#-- Prompt -->
+ <#if inputJson.attributes?? && inputJson.attributes.prompt?? && inputJson.attributes.prompt?has_content>
+ <div class="d-flex gap-3 mb-4">
+ <div class="flex-shrink-0">
+ <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-primary text-white" style="width:40px;height:40px">
+ <i class="ti ti-user"></i>
+ </div>
+ </div>
+ <div class="flex-grow-1" style="min-width:0">
+ <div class="fw-semibold small text-secondary mb-1">#i18n{platform.observability.model.prompt}</div>
+ <div class="content-block-auto">${inputJson.attributes.prompt}</div>
+ </div>
+ </div>
+ </#if>
+
+ <#-- Response -->
+ <#if modelResponse?has_content>
+ <div class="d-flex gap-3">
+ <div class="flex-shrink-0">
+ <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-success text-white" style="width:40px;height:40px">
+ <i class="ti ti-brain"></i>
+ </div>
+ </div>
+ <div class="flex-grow-1" style="min-width:0">
+ <div class="fw-semibold small text-secondary mb-1">${resourceName}</div>
+ <div class="content-block-auto">${modelResponse}</div>
+ </div>
+ </div>
+ <#elseif !(inputJson.attributes?? && inputJson.attributes.prompt?? && inputJson.attributes.prompt?has_content)>
+ <#-- Embedding mode: no prompt/response, show operation summary -->
+ <div class="d-flex gap-3">
+ <div class="flex-shrink-0">
+ <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-info text-white" style="width:40px;height:40px">
+ <i class="ti ti-stack-2"></i>
+ </div>
+ </div>
+ <div class="flex-grow-1" style="min-width:0">
+ <div class="fw-semibold small text-secondary mb-1">Embedding</div>
+ <div>
+ <#if outputJson.attributes?? && outputJson.attributes.response?? && outputJson.attributes.response?has_content>
+ ${outputJson.attributes.response}
+ <#else>
+ #i18n{platform.observability.model.embeddingGeneration}
+ </#if>
+ <#if totalInputTokens gt 0>
+ <span class="text-secondary ms-2">(${totalInputTokens?string.computer} tokens)</span>
+ </#if>
+ </div>
+ </div>
+ </div>
+ </#if>
+ </div>
+ </div>
+
+ <#-- Conversation history (collapsible) -->
+ <#if inputJson.attributes?? && inputJson.attributes.history?? && inputJson.attributes.history?has_content>
+ <div class="mb-4">
+ <details>
+ <summary class="d-flex align-items-center justify-content-between gap-4 py-2 small fw-medium text-decoration-underline" role="button">
+ <span class="d-flex align-items-center">
+ <i class="ti ti-history"></i>
+ #i18n{platform.observability.model.history} (${inputJson.attributes.history?size} messages)
+ </span>
+ <i class="ti ti-chevron-down"></i>
+ </summary>
+ <div class="mt-2">
+ <div class="card">
+ <div class="card-body p-3">
+ <#list inputJson.attributes.history as msg>
+ <div class="d-flex gap-2 <#if msg?has_next>mb-2</#if>">
+ <div class="flex-shrink-0">
+ <#if msg.role == "user">
+ <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-opacity-10 bg-primary" style="width:32px;height:32px">
+ <i class="ti ti-user"></i>
+ </div>
+ <#elseif msg.role == "assistant">
+ <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-success bg-opacity-10" style="width:32px;height:32px">
+ <i class="ti ti-message-chatbot"></i>
+ </div>
+ <#else>
+ <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-warning bg-opacity-10" style="width:32px;height:32px">
+ <i class="ti ti-settings"></i>
+ </div>
+ </#if>
+ </div>
+ <div class="flex-grow-1" style="min-width:0">
+ <div class="fw-semibold small text-uppercase text-secondary">${msg.role}</div>
+ <div class="small content-block-auto">${msg.content!''}</div>
+ </div>
+ </div>
+ </#list>
+ </div>
+ </div>
+ </div>
+ </details>
+ </div>
+ </#if>
+
+ <#-- Processing pipeline -->
+ <#if execution.nodeExecutions?? && execution.nodeExecutions?has_content>
+ <div class="card mb-4">
+ <div class="card-header">
+ <h5 class="d-flex align-items-center gap-2 mb-0">
+ <i class="ti ti-git-merge"></i>
+ #i18n{platform.bot_execution_details.processingPipeline}
+ </h5>
+ </div>
+ <div class="card-body p-0">
+ <div class="table-responsive">
+ <table class="table table-hover align-middle mb-0">
+ <thead>
+ <tr>
+ <th>#</th>
+ <th>#i18n{platform.observability.node.name}</th>
+ <th>#i18n{platform.observability.table.start}</th>
+ <th>#i18n{platform.observability.table.duration}</th>
+ <th>Tokens</th>
+ <th>#i18n{platform.observability.table.cost}</th>
+ <th>#i18n{platform.observability.table.status}</th>
+ </tr>
+ </thead>
+ <tbody>
+ <#list execution.nodeExecutions?sort_by("executionOrder") as node>
+ <#assign nodeOut = {}>
+ <#attempt>
+ <#assign nodeOut = (node.outputData!"")?replace(':null', ':""')?replace(': null', ':""')?eval>
+ <#recover></#attempt>
+ <#assign nodeInputTokens = 0>
+ <#assign nodeOutputTokens = 0>
+ <#if nodeOut.attributes??>
+ <#if nodeOut.attributes.inputTokens??><#assign nodeInputTokens = nodeOut.attributes.inputTokens></#if>
+ <#if nodeOut.attributes.outputTokens??><#assign nodeOutputTokens = nodeOut.attributes.outputTokens></#if>
+ </#if>
+ <tr>
+ <td><span class="badge bg-secondary text-white">${node.executionOrder}</span></td>
+ <td class="fw-semibold">${node.nodeName!node.nodeId}</td>
+ <td><#if node.startTime??>${node.startTime?string("HH:mm:ss")}<#else>-</#if></td>
+ <td>
+ <#if node.endTime?? && node.startTime??>
+ <@durationFormat ms=(node.endTime?long - node.startTime?long) />
+ <#else>-</#if>
+ </td>
+ <td>
+ <#if (nodeInputTokens > 0) || (nodeOutputTokens > 0)>
+ <span class="small"><i class="ti ti-arrow-down"></i>${nodeInputTokens?string.computer} <i class="ti ti-arrow-up"></i>${nodeOutputTokens?string.computer}</span>
+ <#else>-</#if>
+ </td>
+ <td><#if node.totalCost?? && node.totalCost != 0>${node.totalCost?string["0.######"]} &euro;<#else>-</#if></td>
+ <td><@statusBadge status=node.status /></td>
+ </tr>
+ <#if node.errorMessage?? && node.errorMessage?has_content>
+ <tr>
+ <td colspan="7">
+ <div class="alert alert-danger mb-0"><i class="ti ti-alert-circle me-2"></i>${node.errorMessage}</div>
+ </td>
+ </tr>
+ </#if>
+ </#list>
+ </tbody>
+ </table>
+ </div>
+ </div>
+ </div>
+ </#if>
+
+ <#-- Metadata -->
+ <#if inputJson.attributes??>
+ <div class="card mb-4">
+ <div class="card-body p-3">
+ <div class="d-flex flex-wrap gap-3 small text-secondary">
+ <#if inputJson.attributes.model??>
+ <div><span class="fw-semibold">#i18n{platform.observability.model.metadata.model}</span> ${inputJson.attributes.model}</div>
+ </#if>
+ <#if inputJson.attributes.providerId??>
+ <div><span class="fw-semibold">#i18n{platform.observability.model.metadata.providerId}</span> ${inputJson.attributes.providerId}</div>
+ </#if>
+ <#if inputJson.attributes.streaming??>
+ <div><span class="fw-semibold">#i18n{platform.observability.model.metadata.mode}</span> <#if inputJson.attributes.streaming>Streaming<#else>#i18n{platform.observability.model.mode.standard}</#if></div>
+ </#if>
+ </div>
+ </div>
+ </div>
+ </#if>
+
+ </div>
+ </div>
+</div>

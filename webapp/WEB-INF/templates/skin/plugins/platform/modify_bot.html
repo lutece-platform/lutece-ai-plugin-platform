@@ -1,0 +1,504 @@
+<#ftl output_format="HTML">
+<#include "commons/page_header_bot.html">
+ <form method="post" action="jsp/site/Portal.jsp" enctype="multipart/form-data">
+ <input type="hidden" name="page" value="agent_bot">
+ <input type="hidden" name="action" value="doModifyBot">
+ <input type="hidden" name="bot_id" value="${bot.id}">
+ <input type="hidden" name="logo_base64" id="logo_base64" value="${bot.logoBase64!}">
+ <input type="hidden" name="aggregation_strategy" value="${bot.aggregationStrategy!}">
+
+ <div class="row g-3">
+
+ <#-- ===== Card General ===== -->
+ <div class="col-lg-8">
+ <div class="card mb-3">
+ <div class="card-body">
+ <h5 class="fw-bold mb-3"><i class="ti ti-settings me-2"></i>#i18n{platform.agent.modify_bot.general_info}</h5>
+ <div class="row g-3">
+ <div class="col-md-6">
+ <label for="bot_name" class="form-label">#i18n{platform.agent.model.entity.bot.attribute.botName} *</label>
+ <input type="text" class="form-control" id="bot_name" name="bot_name" value="${bot.botName!}" required>
+ </div>
+ <div class="col-md-6">
+ <label for="bot_description" class="form-label">#i18n{platform.agent.model.entity.bot.attribute.botDescription}</label>
+ <input type="text" class="form-control" id="bot_description" name="bot_description" value="${bot.botDescription!}">
+ </div>
+ <div class="col-12">
+ <label for="logo_file" class="form-label">#i18n{platform.agent.model.entity.bot.attribute.logo}</label>
+ <input type="file" class="form-control" id="logo_file" name="logo_file" accept="image/*">
+ <div class="form-text">#i18n{platform.agent.modify_bot.logoHelp}</div>
+ <div id="logo_preview" class="mt-2 <#if !(bot.logoBase64!"")?has_content>d-none</#if> d-flex align-items-center gap-2">
+ <img id="logo_preview_img" src="${bot.logoBase64!}" alt="#i18n{platform.agent.model.entity.bot.attribute.logo}" class="rounded-circle object-fit-cover" style="width:48px;height:48px">
+ <button type="button" class="btn btn-light" id="remove_logo"><i class="ti ti-trash"></i></button>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+
+ <#-- Messages & Prompts -->
+ <div class="card">
+ <div class="card-body">
+ <h5 class="fw-bold mb-3"><i class="ti ti-message-cog me-2"></i>#i18n{platform.agent.modify_bot.messages_prompts}</h5>
+ <div class="row g-3">
+ <div class="col-12">
+ <label for="bot_system_prompt" class="form-label">#i18n{platform.agent.model.entity.bot.attribute.botSystemPrompt}</label>
+ <textarea class="form-control" id="bot_system_prompt" name="bot_system_prompt" rows="16">${bot.botSystemPrompt!}</textarea>
+ <div class="form-text">#i18n{platform.agent.helper.systemPrompt}</div>
+ </div>
+ <div class="col-12">
+ <label for="welcome_message" class="form-label">#i18n{platform.agent.model.entity.bot.attribute.welcomeMessage}</label>
+ <textarea class="form-control" id="welcome_message" name="welcome_message" rows="4">${bot.welcomeMessage!}</textarea>
+ <div class="form-text">#i18n{platform.agent.helper.welcomeMessage}</div>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+
+ <#-- ===== Right column ===== -->
+ <div class="col-lg-4">
+
+ <#-- Model & Behavior -->
+ <div class="card mb-3">
+ <div class="card-body">
+ <h5 class="fw-bold mb-3"><i class="ti ti-brain me-2"></i>#i18n{platform.agent.modify_bot.technical_config}</h5>
+ <div class="mb-3">
+ <label for="llm_provider_id" class="form-label">#i18n{platform.agent.model.entity.bot.attribute.llmProviderId} *</label>
+ <select class="form-select" data-mu-toggle="select" id="llm_provider_id" name="llm_provider_id" required>
+ <#if llm_providers?? && llm_providers?size gt 0>
+ <#list llm_providers as provider>
+ <option value="${provider.id}" <#if bot.llmProviderId==provider.id>selected</#if>>${provider.providerName}</option>
+ </#list>
+ <#else>
+ <option value="">#i18n{platform.modify_bot.noLlmProvider}</option>
+ </#if>
+ </select>
+ <div class="form-text">#i18n{platform.agent.helper.llmProvider}</div>
+ </div>
+ <div class="mb-3">
+ <label for="embed_provider_id" class="form-label">#i18n{platform.agent.model.entity.bot.attribute.embedProviderId} *</label>
+ <select class="form-select" data-mu-toggle="select" id="embed_provider_id" name="embed_provider_id" required>
+ <#if embed_providers?? && embed_providers?size gt 0>
+ <#list embed_providers as provider>
+ <option value="${provider.id}" <#if bot.embedProviderId==provider.id>selected</#if>>${provider.providerName}</option>
+ </#list>
+ <#else>
+ <option value="">#i18n{platform.modify_bot.noEmbedProvider}</option>
+ </#if>
+ </select>
+ <div class="form-text">#i18n{platform.agent.helper.embedProvider}</div>
+ </div>
+ <div class="mb-3">
+ <label for="max_tokens" class="form-label">#i18n{platform.agent.model.entity.bot.attribute.maxTokens} *</label>
+ <input type="number" class="form-control" id="max_tokens" name="max_tokens" value="${bot.maxTokens!}" min="0" required>
+ <div class="form-text">#i18n{platform.agent.helper.maxTokens}</div>
+ </div>
+ <div class="mb-3">
+ <label for="temperature" class="form-label">#i18n{platform.agent.model.entity.bot.attribute.temperature} *</label>
+ <input type="number" class="form-control" id="temperature" name="temperature" value="${bot.temperature!?string.computer}" min="0" max="1" step="0.1" required>
+ <div class="form-text">#i18n{platform.agent.helper.temperature}</div>
+ </div>
+ <div>
+ <label for="rate_limit_by_user_by_day" class="form-label">#i18n{platform.agent.model.entity.bot.attribute.rateLimitByUserByDay}</label>
+ <input type="number" class="form-control" id="rate_limit_by_user_by_day" name="rate_limit_by_user_by_day" value="${bot.rateLimitByUserByDay!}" min="0">
+ <div class="form-text">#i18n{platform.agent.helper.rateLimit}</div>
+ </div>
+ </div>
+ </div>
+
+ <#-- Pipelines (Tools) -->
+ <div class="card mb-3">
+ <div class="card-body">
+ <h5 class="fw-bold mb-3"><i class="ti ti-tool me-2"></i>#i18n{platform.agent.modify_bot.pipelines}</h5>
+ <#if pipelines?? && pipelines?has_content>
+ <div class="list-group">
+ <#list pipelines as pipeline>
+ <label class="list-group-item d-flex align-items-center gap-3">
+ <input class="form-check-input mt-0" type="checkbox" name="pipeline_ids" value="${pipeline.id}" <#if selected_pipelines?? && selected_pipelines?seq_contains(pipeline.id)>checked</#if>>
+ <div class="flex-grow-1">
+ <div class="fw-medium">${pipeline.name}</div>
+ <#if pipeline.description?has_content>
+ <small class="text-secondary">${pipeline.description}</small>
+ </#if>
+ </div>
+ </label>
+ </#list>
+ </div>
+ <#else>
+ <div class="text-center py-4 text-secondary">
+ <i class="ti ti-tool" style="font-size: 2rem;"></i>
+ <p class="mt-2 mb-0">#i18n{platform.agent.manage_pipelines.noPipeline}</p>
+ </div>
+ </#if>
+ </div>
+ </div>
+
+ <#-- MCP Servers -->
+ <div class="card mb-3">
+ <div class="card-body">
+ <h5 class="fw-bold mb-3"><i class="ti ti-plug me-2"></i>#i18n{platform.agent.modify_bot.mcpServers}</h5>
+ <#if mcp_servers?? && mcp_servers?has_content>
+ <div class="list-group">
+ <#list mcp_servers as server>
+ <label class="list-group-item d-flex align-items-center gap-3">
+ <input class="form-check-input mt-0" type="checkbox" name="mcp_server_ids" value="${server.id}" <#if selected_mcp_servers?? && selected_mcp_servers?seq_contains(server.id)>checked</#if>>
+ <div class="flex-grow-1">
+ <div class="fw-medium">
+ ${server.name}
+ <#if !server.enabled>
+ <span class="badge bg-secondary ms-2">#i18n{platform.agent.manage_mcp_servers.statusDisabled}</span>
+ </#if>
+ </div>
+ <#if server.description?has_content>
+ <small class="text-secondary">${server.description}</small>
+ </#if>
+ <small class="text-muted d-block">${server.transportType} — ${server.url}</small>
+ </div>
+ </label>
+ </#list>
+ </div>
+ <#else>
+ <div class="text-center py-4 text-secondary">
+ <i class="ti ti-plug-off" style="font-size: 2rem;"></i>
+ <p class="mt-2 mb-0">#i18n{platform.agent.manage_mcp_servers.noServer}</p>
+ </div>
+ </#if>
+ </div>
+ </div>
+
+ </div>
+
+ <#-- ===== Card Datasets ===== -->
+ <#assign qeMode = bot.queryEnhancementMode!"NONE">
+ <#assign hasAdvanced = (bot.enableContentAggregation!false) || qeMode != "NONE" || (bot.semanticSearchMaxResults!15) != 15 || (bot.semanticSearchMinScore!0.7) != 0.7>
+
+ <div class="col-12">
+ <div class="card mb-3">
+ <div class="card-body">
+ <div class="d-flex align-items-center justify-content-between mb-3">
+ <h5 class="fw-bold mb-0"><i class="ti ti-database me-2"></i>#i18n{platform.agent.modify_bot.datasets}</h5>
+ <#if datasets_external?? && datasets_external?size gt 0>
+ <button type="button" class="btn btn-light" onclick="new bootstrap.Modal(document.getElementById('externalDatasetsDialog')).show()">
+ <i class="ti ti-plus me-1"></i>#i18n{platform.agent.create_bot.addExternalDataset}
+ </button>
+ </#if>
+ </div>
+ <#if datasets_local?? && datasets_local?size gt 0>
+ <div class="list-group">
+ <#list datasets_local as dataset>
+ <label class="list-group-item d-flex align-items-center gap-3">
+ <input class="form-check-input mt-0" type="checkbox" name="dataset_ids" value="${dataset.id}" <#if selected_datasets?? && selected_datasets?seq_contains(dataset.id)>checked</#if>>
+ <div class="flex-grow-1">
+ <div class="fw-medium">${dataset.datasetName}</div>
+ <#if dataset.datasetDescription?has_content>
+ <small class="text-secondary">${dataset.datasetDescription}</small>
+ </#if>
+ </div>
+ </label>
+ </#list>
+ </div>
+ <#else>
+ <#assign hasSelectedExternal = false>
+ <#if datasets_external?? && selected_datasets??>
+ <#list datasets_external as dataset>
+ <#if selected_datasets?seq_contains(dataset.id)><#assign hasSelectedExternal = true><#break></#if>
+ </#list>
+ </#if>
+ <div id="no_datasets_message" class="text-center py-5 text-secondary<#if hasSelectedExternal> d-none</#if>">
+ <i class="ti ti-database" style="font-size: 2rem;"></i>
+ <p class="mt-2">#i18n{platform.agent.manage_datasets.noDataset}</p>
+ </div>
+ </#if>
+
+ <div id="external_datasets_container">
+ <#if datasets_external?? && selected_datasets??>
+ <#list datasets_external as dataset>
+ <#if selected_datasets?seq_contains(dataset.id)>
+ <div class="external-dataset-item d-flex align-items-center justify-content-between border rounded p-2 mt-2" data-dataset-id="${dataset.id}">
+ <input type="hidden" name="dataset_ids" value="${dataset.id}">
+ <div>
+ <div class="fw-medium">${dataset.datasetName}</div>
+ <small class="text-secondary">#i18n{platform.model.entity.subscription.attribute.client}</small>
+ </div>
+ <button type="button" class="btn btn-light remove-external-dataset" data-dataset-id="${dataset.id}">
+ <i class="ti ti-x"></i>
+ </button>
+ </div>
+ </#if>
+ </#list>
+ </#if>
+ </div>
+ </div>
+ </div>
+ </div>
+
+ <#-- ===== Card Advanced Config ===== -->
+ <div class="col-12">
+ <div class="card">
+ <div class="card-body">
+ <details <#if hasAdvanced>open</#if>>
+ <summary class="fw-bold" role="button">#i18n{platform.agent.create_bot.advancedConfig}</summary>
+ <div class="mt-4">
+
+ <#-- Content Aggregation -->
+ <h6 class="fw-bold mb-3">#i18n{platform.agent.modify_bot.builtin_tools}</h6>
+ <div class="form-check form-switch mb-2">
+ <input class="form-check-input" type="checkbox" role="switch" id="enable_builtin_tools" name="enable_builtin_tools" value="true" <#if bot.enableBuiltinTools!false>checked</#if>>
+ <label class="form-check-label" for="enable_builtin_tools">#i18n{platform.agent.model.entity.bot.attribute.enableBuiltinTools}</label>
+ </div>
+ <div class="form-text mb-3">#i18n{platform.agent.helper.builtinTools}</div>
+
+ <hr>
+
+ <h6 class="fw-bold mb-3">#i18n{platform.agent.create_bot.content_aggregation}</h6>
+ <div class="form-check form-switch mb-2">
+ <input class="form-check-input" type="checkbox" role="switch" id="enable_content_aggregation" name="enable_content_aggregation" value="true" <#if bot.enableContentAggregation!false>checked</#if>>
+ <label class="form-check-label" for="enable_content_aggregation">#i18n{platform.agent.model.entity.bot.attribute.enableContentAggregation}</label>
+ </div>
+ <div class="form-text mb-3">#i18n{platform.agent.helper.contentAggregation}</div>
+ <div id="aggregation_settings" class="<#if !(bot.enableContentAggregation!false)>d-none</#if> mb-3">
+ <label for="aggregation_max_results" class="form-label">#i18n{platform.agent.model.entity.bot.attribute.aggregationMaxResults}</label>
+ <input type="number" class="form-control" id="aggregation_max_results" name="aggregation_max_results" value="${bot.aggregationMaxResults!15}" min="1" max="1000">
+ <div class="form-text">#i18n{platform.agent.create_bot.aggregationMaxResultsHelp}</div>
+ </div>
+
+ <hr>
+
+ <#-- Query Enhancement -->
+ <h6 class="fw-bold mb-3">#i18n{platform.agent.create_bot.query_enhancement}</h6>
+ <div class="mb-3">
+ <label for="query_enhancement_mode" class="form-label">#i18n{platform.agent.model.entity.bot.attribute.queryEnhancementMode}</label>
+ <select class="form-select" data-mu-toggle="select" id="query_enhancement_mode" name="query_enhancement_mode">
+ <option value="NONE" <#if qeMode == "NONE">selected</#if>>#i18n{platform.agent.queryEnhancementMode.none}</option>
+ <option value="EXPANSION_ONLY" <#if qeMode == "EXPANSION_ONLY">selected</#if>>#i18n{platform.agent.queryEnhancementMode.expansion_only}</option>
+ <option value="HYDE_ONLY" <#if qeMode == "HYDE_ONLY">selected</#if>>#i18n{platform.agent.queryEnhancementMode.hyde_only}</option>
+ <option value="EXPANSION_THEN_HYDE" <#if qeMode == "EXPANSION_THEN_HYDE">selected</#if>>#i18n{platform.agent.queryEnhancementMode.expansion_then_hyde}</option>
+ <option value="EXPANSION_PLUS_HYDE_GLOBAL" <#if qeMode == "EXPANSION_PLUS_HYDE_GLOBAL">selected</#if>>#i18n{platform.agent.queryEnhancementMode.expansion_plus_hyde_global}</option>
+ </select>
+ <div class="form-text">#i18n{platform.agent.helper.queryEnhancement}</div>
+ </div>
+
+ <#assign showExpansion = qeMode == "EXPANSION_ONLY" || qeMode == "EXPANSION_THEN_HYDE" || qeMode == "EXPANSION_PLUS_HYDE_GLOBAL">
+ <#assign showHyde = qeMode == "HYDE_ONLY" || qeMode == "EXPANSION_THEN_HYDE" || qeMode == "EXPANSION_PLUS_HYDE_GLOBAL">
+
+ <div id="expansion_settings" class="<#if !showExpansion>d-none</#if> mb-3">
+ <label for="query_expansion_variants" class="form-label">#i18n{platform.agent.model.entity.bot.attribute.queryExpansionVariants}</label>
+ <input type="number" class="form-control" id="query_expansion_variants" name="query_expansion_variants" value="${bot.queryExpansionVariants!3}" min="2" max="5">
+ <div class="form-text">#i18n{platform.agent.create_bot.queryExpansionVariantsHelp}</div>
+ </div>
+
+ <div id="hyde_settings" class="<#if !showHyde>d-none</#if> mb-3">
+ <label for="hyde_max_tokens" class="form-label">#i18n{platform.agent.model.entity.bot.attribute.hydeMaxTokens}</label>
+ <input type="number" class="form-control" id="hyde_max_tokens" name="hyde_max_tokens" value="${bot.hydeMaxTokens!500}" min="100" max="2000">
+ <div class="form-text">#i18n{platform.agent.create_bot.hydeMaxTokensHelp}</div>
+ </div>
+
+ <div id="hyde_prompt_settings" class="<#if !showHyde>d-none</#if> mb-3">
+ <label for="hyde_prompt_template" class="form-label">#i18n{platform.agent.model.entity.bot.attribute.hydePromptTemplate}</label>
+ <input type="text" class="form-control" id="hyde_prompt_template" name="hyde_prompt_template" value="${bot.hydePromptTemplate!'Generez une reponse detaillee et complete pour la question suivante : {query}'}">
+ <div class="form-text">#i18n{platform.agent.create_bot.hydePromptTemplateHelp}</div>
+ </div>
+
+ <hr>
+
+ <#-- Semantic Search -->
+ <h6 class="fw-bold mb-3">#i18n{platform.agent.create_bot.semantic_search}</h6>
+ <div class="row g-3">
+ <div class="col-md-6">
+ <label for="semantic_search_max_results" class="form-label">#i18n{platform.agent.model.entity.bot.attribute.semanticSearchMaxResults}</label>
+ <input type="number" class="form-control" id="semantic_search_max_results" name="semantic_search_max_results" value="${bot.semanticSearchMaxResults!15}" min="1" max="100">
+ <div class="form-text">#i18n{platform.agent.helper.semanticSearchMaxResults}</div>
+ </div>
+ <div class="col-md-6">
+ <label for="semantic_search_min_score" class="form-label">#i18n{platform.agent.model.entity.bot.attribute.semanticSearchMinScore}</label>
+ <input type="number" class="form-control" id="semantic_search_min_score" name="semantic_search_min_score" value="${bot.semanticSearchMinScore!0.7}" min="0" max="1" step="0.1">
+ <div class="form-text">#i18n{platform.agent.helper.semanticSearchMinScore}</div>
+ </div>
+ </div>
+
+ </div>
+ </details>
+ </div>
+ </div>
+ </div>
+
+ </div>
+
+ <#-- Action buttons -->
+ <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+ <a href="jsp/site/Portal.jsp?page=agent_bot&view=viewBot&bot_id=${bot.id}" class="btn btn-light">
+ #i18n{platform.agent.xpage.action.cancel}
+ </a>
+ <#if bot.userCanModify!false>
+ <button type="submit" class="btn btn-primary">
+ <i class="ti ti-device-floppy me-1"></i>#i18n{platform.agent.xpage.action.save}
+ </button>
+ </#if>
+ </div>
+ </form>
+
+<#-- External Datasets Dialog -->
+<#if datasets_external?? && datasets_external?size gt 0>
+<div class="modal fade" id="externalDatasetsDialog" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered modal-dialog-scrollable"><div class="modal-content">
+ <div class="modal-header">
+ <h1 class="modal-title fs-3">#i18n{platform.agent.create_bot.externalDatasetsModalTitle}</h1>
+ <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+ </div>
+ <div class="modal-body">
+ <p class="text-secondary mb-3">#i18n{platform.agent.create_bot.externalDatasetsModalDescription}</p>
+ <div class="list-group">
+ <#list datasets_external as dataset>
+ <label class="list-group-item d-flex align-items-center gap-3">
+ <input class="form-check-input mt-0 external-dataset-checkbox" type="checkbox" value="${dataset.id}" id="external_dataset_${dataset.id}" <#if selected_datasets?? && selected_datasets?seq_contains(dataset.id)>checked</#if>>
+ <div class="flex-grow-1">
+ <div class="fw-medium">${dataset.datasetName}</div>
+ <small class="text-secondary">
+ <#if dataset.datasetDescription?has_content>${dataset.datasetDescription} - </#if>
+ #i18n{platform.model.entity.subscription.attribute.client}
+ </small>
+ </div>
+ </label>
+ </#list>
+ </div>
+ </div>
+ <div class="modal-footer">
+ <button type="button" class="btn btn-light" data-bs-dismiss="modal">#i18n{portal.util.labelCancel}</button>
+ <button type="button" class="btn btn-primary" id="addExternalDatasetsBtn">
+ <i class="ti ti-check me-1"></i>#i18n{platform.agent.create_bot.addSelectedDatasets}
+ </button>
+ </div>
+</div></div></div>
+</#if>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+ // Aggregation toggle
+ var aggregationCheckbox = document.getElementById('enable_content_aggregation');
+ var aggregationSettings = document.getElementById('aggregation_settings');
+ aggregationCheckbox.addEventListener('change', function() {
+ aggregationSettings.classList.toggle('d-none', !this.checked);
+ });
+
+ // Query enhancement toggle
+ var queryMode = document.getElementById('query_enhancement_mode');
+ var expansionSettings = document.getElementById('expansion_settings');
+ var hydeSettings = document.getElementById('hyde_settings');
+ var hydePromptSettings = document.getElementById('hyde_prompt_settings');
+
+ queryMode.addEventListener('change', function() {
+ var mode = this.value;
+ expansionSettings.classList.add('d-none');
+ hydeSettings.classList.add('d-none');
+ hydePromptSettings.classList.add('d-none');
+
+ if (mode === 'EXPANSION_ONLY' || mode === 'EXPANSION_THEN_HYDE' || mode === 'EXPANSION_PLUS_HYDE_GLOBAL') {
+ expansionSettings.classList.remove('d-none');
+ }
+ if (mode === 'HYDE_ONLY' || mode === 'EXPANSION_THEN_HYDE' || mode === 'EXPANSION_PLUS_HYDE_GLOBAL') {
+ hydeSettings.classList.remove('d-none');
+ hydePromptSettings.classList.remove('d-none');
+ }
+ });
+
+ // Logo handling
+ var logoFile = document.getElementById('logo_file');
+ var logoPreview = document.getElementById('logo_preview');
+ var logoPreviewImg = document.getElementById('logo_preview_img');
+ var logoBase64Input = document.getElementById('logo_base64');
+ var removeLogo = document.getElementById('remove_logo');
+
+ logoFile.addEventListener('change', function(e) {
+ var file = e.target.files[0];
+ if (file) {
+ if (file.size > 2 * 1024 * 1024) {
+ alert("#i18n{platform.create_bot.js.fileTooLarge}");
+ logoFile.value = '';
+ return;
+ }
+ if (!file.type.startsWith('image/')) {
+ alert("#i18n{platform.create_bot.js.selectImageFile}");
+ logoFile.value = '';
+ return;
+ }
+ var reader = new FileReader();
+ reader.onload = function(e) {
+ logoBase64Input.value = e.target.result;
+ logoPreviewImg.src = e.target.result;
+ logoPreview.classList.remove('d-none');
+ };
+ reader.readAsDataURL(file);
+ }
+ });
+
+ removeLogo.addEventListener('click', function() {
+ logoFile.value = '';
+ logoBase64Input.value = '';
+ logoPreview.classList.add('d-none');
+ logoPreviewImg.src = '';
+ });
+
+ // Toggle empty state for datasets
+ function toggleNoDatasets() {
+ var msg = document.getElementById('no_datasets_message');
+ if (msg) {
+ var hasDatasets = document.querySelector('#external_datasets_container .external-dataset-item') || document.querySelector('input[name="dataset_ids"]:checked');
+ msg.classList.toggle('d-none', !!hasDatasets);
+ }
+ }
+
+ // External datasets dialog
+ var addExternalDatasetsBtn = document.getElementById('addExternalDatasetsBtn');
+ if (addExternalDatasetsBtn) {
+ addExternalDatasetsBtn.addEventListener('click', function() {
+ var container = document.getElementById('external_datasets_container');
+ container.innerHTML = '';
+ document.querySelectorAll('.external-dataset-checkbox:checked').forEach(function(cb) {
+ var label = cb.closest('label');
+ var name = label.querySelector('.fw-medium').textContent;
+ var detail = label.querySelector('small').textContent;
+ var div = document.createElement('div');
+ div.className = 'external-dataset-item d-flex align-items-center justify-content-between border rounded p-2 mt-2';
+ div.dataset.datasetId = cb.value;
+ div.innerHTML = '<input type="hidden" name="dataset_ids" value="' + cb.value + '">'
+ + '<div><div class="fw-medium">' + name + '</div><small class="text-secondary">' + detail + '</small></div>'
+ + '<button type="button" class="btn btn-light remove-external-dataset" data-dataset-id="' + cb.value + '"><i class="ti ti-x"></i></button>';
+ container.appendChild(div);
+ });
+ bootstrap.Modal.getInstance(document.getElementById('externalDatasetsDialog')).hide();
+ toggleNoDatasets();
+ });
+ }
+
+ // Remove external dataset
+ document.addEventListener('click', function(e) {
+ var btn = e.target.closest('.remove-external-dataset');
+ if (btn) {
+ var datasetId = btn.dataset.datasetId;
+ var cb = document.getElementById('external_dataset_' + datasetId);
+ if (cb) cb.checked = false;
+ btn.closest('.external-dataset-item').remove();
+ toggleNoDatasets();
+ }
+ });
+});
+</script>
+
+<script type="module">
+import { createLuteceChat } from './js/lutecechat/dist/lutece-chat-bundle.js';
+import ZeroMd, { STYLES } from './js/zeromd.js'
+
+customElements.define('zero-md', class extends ZeroMd {
+ async load() {
+ await super.load()
+ this.template = STYLES.preset('light') + `<style>.p-4 { padding:2rem; }</style>`
+ }
+});
+
+createLuteceChat({
+ botId: '${bot.id}',
+ showBotList: false,
+ endpoints: { base: 'rest/platform/agent/admin' },
+ sidebar: { open: true }
+});
+</script>

@@ -1,0 +1,53 @@
+<#ftl output_format="HTML">
+<#assign clientQs><#if (client_id!)?has_content>&amp;client_id=${client_id!}</#if></#assign>
+
+<div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4">
+ <div>
+ <a href="jsp/site/Portal.jsp?page=agent_dataset&amp;view=viewDataset&amp;dataset_id=${dataset.id!}<#if (current_folder)??>&amp;folder_id=${current_folder.id}</#if>${clientQs}" class="small text-secondary text-decoration-none d-flex align-items-center gap-1 mb-2">
+ <i class="ti ti-arrow-left"></i>#i18n{platform.agent.xpage.action.back}
+ </a>
+ <h1 class="fw-bold mb-1">#i18n{platform.agent.create_folder.pageTitle}</h1>
+ <p class="text-secondary mb-0">${dataset.datasetName!} — <code>${parent_path!'/'}</code></p>
+ </div>
+</div>
+
+<#if (infos!)?has_content><#list (infos![]) as info><div class="alert alert-info">${info!}</div></#list></#if>
+<#if (errors!)?has_content><#list (errors![]) as error><div class="alert alert-danger">${error.message!}</div></#list></#if>
+
+<form method="post" action="jsp/site/Portal.jsp">
+ <input type="hidden" name="page" value="agent_dataset">
+ <input type="hidden" name="action" value="doCreateFolder">
+ <input type="hidden" name="dataset_id" value="${dataset.id!}">
+ <#if (client_id!)?has_content><input type="hidden" name="client_id" value="${client_id!}"></#if>
+
+ <div class="card">
+ <div class="card-body">
+ <div class="row g-3">
+ <div class="col-md-6">
+ <label for="parent_folder_id" class="form-label">#i18n{platform.agent.create_folder.parent}</label>
+ <select class="form-select" id="parent_folder_id" name="parent_folder_id">
+ <option value=""<#if !(current_folder)??> selected</#if>>/</option>
+ <#if (all_folders!)?has_content>
+ <#list all_folders as option>
+ <option value="${option.id}"<#if (current_folder)?? && current_folder.id == option.id> selected</#if>>${option.path}</option>
+ </#list>
+ </#if>
+ </select>
+ </div>
+ <div class="col-md-6">
+ <label for="folder_name" class="form-label">#i18n{platform.agent.model.entity.folder.attribute.name} *</label>
+ <input type="text" class="form-control" id="folder_name" name="folder_name" maxlength="255" required>
+ </div>
+ <div class="col-12">
+ <label for="folder_description" class="form-label">#i18n{platform.agent.model.entity.folder.attribute.description}</label>
+ <textarea class="form-control" id="folder_description" name="folder_description" rows="3"></textarea>
+ <div class="form-text">#i18n{platform.agent.helper.folderDescription}</div>
+ </div>
+ </div>
+ </div>
+ <div class="card-footer d-flex justify-content-end gap-2">
+ <a href="jsp/site/Portal.jsp?page=agent_dataset&amp;view=viewDataset&amp;dataset_id=${dataset.id!}<#if (current_folder)??>&amp;folder_id=${current_folder.id}</#if>${clientQs}" class="btn btn-light">#i18n{platform.agent.xpage.action.cancel}</a>
+ <button type="submit" class="btn btn-primary"><i class="ti ti-check me-1"></i>#i18n{platform.agent.xpage.action.create}</button>
+ </div>
+ </div>
+</form>

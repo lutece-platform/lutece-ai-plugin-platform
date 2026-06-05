@@ -1,0 +1,15 @@
+<#if (infos!)?has_content>
+    <#list (infos![]) as info>
+        <div class="alert alert-info" role="alert">${info}</div>
+    </#list>
+</#if>
+<#if (errors!)?has_content>
+    <#list (errors![]) as error>
+        <div class="alert alert-danger" role="alert">${error.message}</div>
+    </#list>
+</#if>
+<#if (warnings!)?has_content>
+    <#list (warnings![]) as warning>
+        <div class="alert alert-warning" role="alert">${warning}</div>
+    </#list>
+</#if>

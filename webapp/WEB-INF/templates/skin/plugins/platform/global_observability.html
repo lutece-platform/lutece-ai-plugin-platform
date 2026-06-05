@@ -1,0 +1,333 @@
+<#ftl output_format="HTML">
+
+<#-- Header -->
+<div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4">
+    <div>
+        <a href="jsp/site/Portal.jsp?page=platform&view=listClients" class="small text-secondary text-decoration-none d-flex align-items-center gap-1 mb-2">
+            <i class="ti ti-arrow-left"></i>#i18n{platform.xpage.action.back}
+        </a>
+        <h1 class="fw-bold mb-1">#i18n{platform.globalObservability.title}</h1>
+        <p class="text-secondary mb-0">#i18n{platform.globalObservability.description}</p>
+    </div>
+    <div class="mt-3 mt-md-0">
+        <form method="get" action="jsp/site/Portal.jsp" class="d-flex align-items-center gap-2">
+            <input type="hidden" name="page" value="platform" />
+            <input type="hidden" name="view" value="globalObservability" />
+            <select class="form-select" name="date_range" id="date_range">
+                <option value="7days" <#if date_range?? && date_range == "7days">selected</#if>>#i18n{platform.observability.dateRange.7days}</option>
+                <option value="15days" <#if date_range?? && date_range == "15days">selected</#if>>#i18n{platform.observability.dateRange.15days}</option>
+                <option value="month" <#if date_range?? && date_range == "month">selected</#if>>#i18n{platform.observability.dateRange.month}</option>
+                <option value="3months" <#if date_range?? && date_range == "3months">selected</#if>>#i18n{platform.observability.dateRange.3months}</option>
+                <option value="all" <#if date_range?? && date_range == "all">selected</#if>>#i18n{platform.observability.dateRange.all}</option>
+            </select>
+        </form>
+    </div>
+</div>
+
+<#include "commons/messages.html" />
+
+<#if total_executions == 0>
+    <div class="card w-100">
+        <div class="card-body d-flex flex-column align-items-center justify-content-center py-5 text-center">
+            <i class="ti ti-chart-bar text-secondary mb-3" style="font-size: 3rem;"></i>
+            <p class="fw-semibold text-secondary mb-1">#i18n{platform.observability.noData.title}</p>
+            <p class="text-secondary mb-0">#i18n{platform.observability.noData.description}</p>
+        </div>
+    </div>
+<#else>
+    <#-- KPI Stats -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="text-secondary small text-truncate">#i18n{platform.observability.kpi.totalExecutions}</span>
+                        <i class="ti ti-activity text-secondary"></i>
+                    </div>
+                    <p class="h3 fw-bold mb-0 text-truncate">${total_executions}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="text-secondary small text-truncate">#i18n{platform.observability.kpi.successRate}</span>
+                        <i class="ti ti-circle-check text-secondary"></i>
+                    </div>
+                    <p class="h3 fw-bold mb-0 text-truncate">${global_success_rate?string["0.#"]}%</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="text-secondary small text-truncate">#i18n{platform.observability.kpi.errors}</span>
+                        <i class="ti ti-alert-triangle text-secondary"></i>
+                    </div>
+                    <p class="h3 fw-bold mb-0 text-truncate">${total_errors}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="text-secondary small text-truncate">#i18n{platform.observability.kpi.totalCost}</span>
+                        <i class="ti ti-currency-euro text-secondary"></i>
+                    </div>
+                    <p class="h3 fw-bold mb-0 text-truncate">${total_cost?string["0.####"]}&euro;</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="text-secondary small text-truncate">#i18n{platform.observability.kpi.avgDuration}</span>
+                        <i class="ti ti-clock text-secondary"></i>
+                    </div>
+                    <p class="h3 fw-bold mb-0 text-truncate"><#if avg_duration lt 1>${(avg_duration * 1000)?string["0"]}ms<#elseif avg_duration lt 60>${avg_duration?string["0.#"]}s<#else>${(avg_duration / 60)?int}m ${(avg_duration % 60)?int}s</#if></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <#-- Charts -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <h6 class="fw-semibold mb-0">#i18n{platform.observability.chart.executionsPerDay}</h6>
+                        <button type="button" id="execChartReset" class="btn btn-sm btn-light d-none"><i class="ti ti-zoom-reset"></i></button>
+                    </div>
+                    <div style="height: 260px;">
+                        <canvas id="execChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <h6 class="fw-semibold mb-0">#i18n{platform.observability.chart.costPerDay}</h6>
+                        <button type="button" id="costChartReset" class="btn btn-sm btn-light d-none"><i class="ti ti-zoom-reset"></i></button>
+                    </div>
+                    <div style="height: 260px;">
+                        <canvas id="costChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <#-- Client stats table -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>#i18n{platform.globalObservability.table.client}</th>
+                            <th class="text-end">#i18n{platform.globalObservability.table.executions}</th>
+                            <th class="text-end">#i18n{platform.globalObservability.table.successRate}</th>
+                            <th class="text-end">#i18n{platform.globalObservability.table.errors}</th>
+                            <th class="text-end">#i18n{platform.globalObservability.table.cost}</th>
+                            <th class="text-end">#i18n{platform.globalObservability.table.avgDuration}</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <#list client_stats as cs>
+                        <tr>
+                            <td class="fw-semibold">${cs.client.name!''}</td>
+                            <td class="text-end">${cs.executionCount}</td>
+                            <td class="text-end">
+                                <#if cs.successRate gte 90>
+                                    <span class="text-success">${cs.successRate?string["0.#"]}%</span>
+                                <#elseif cs.successRate gte 70>
+                                    <span class="text-warning">${cs.successRate?string["0.#"]}%</span>
+                                <#else>
+                                    <span class="">${cs.successRate?string["0.#"]}%</span>
+                                </#if>
+                            </td>
+                            <td class="text-end">${cs.errorCount}</td>
+                            <td class="text-end">${cs.totalCost?string["0.####"]}&euro;</td>
+                            <td class="text-end text-secondary small"><#if cs.avgDurationSeconds lt 1>${(cs.avgDurationSeconds * 1000)?string["0"]}ms<#elseif cs.avgDurationSeconds lt 60>${cs.avgDurationSeconds?string["0.#"]}s<#else>${(cs.avgDurationSeconds / 60)?int}m ${(cs.avgDurationSeconds % 60)?int}s</#if></td>
+                            <td class="text-end">
+                                <a href="jsp/site/Portal.jsp?page=platform&view=clientObservability&id=${cs.client.id}" class="btn btn-sm btn-light">
+                                    <i class="ti ti-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        </#list>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</#if>
+
+<script src="js/chart.umd.min.js"></script>
+<script src="js/chartjs-adapter-date-fns.bundle.min.js"></script>
+<script src="js/hammer.min.js"></script>
+<script src="js/chartjs-plugin-zoom.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('date_range').addEventListener('change', function() {
+        this.form.submit();
+    });
+
+    var clientSeries = ${client_series_json?no_esc};
+    if (!clientSeries || !clientSeries.length) return;
+    var hasData = clientSeries.some(function(s) { return s.daily && s.daily.length > 0; });
+    if (!hasData) return;
+
+    function cssVar(name) {
+        return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    }
+
+    function themeColors() {
+        return {
+            tick: cssVar('--bs-secondary-color'),
+            grid: cssVar('--bs-border-color')
+        };
+    }
+
+    var palette = [
+        '#066fd1', '#0ca678', '#ae3ec9', '#f59f00', '#d63384', '#2fb344',
+        '#17a2b8', '#f76707', '#4263eb', '#74b816', '#d63939', '#4299e1'
+    ];
+
+    function hexToRgba(hex, alpha) {
+        var r = parseInt(hex.slice(1, 3), 16);
+        var g = parseInt(hex.slice(3, 5), 16);
+        var b = parseInt(hex.slice(5, 7), 16);
+        return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
+    }
+
+    function colorForIndex(i) {
+        return palette[i % palette.length];
+    }
+
+    function applyTheme(chart) {
+        var c = themeColors();
+        chart.options.scales.x.ticks.color = c.tick;
+        chart.options.scales.y.ticks.color = c.tick;
+        chart.options.scales.y.grid.color = c.grid;
+        if (chart.options.plugins.legend.labels) chart.options.plugins.legend.labels.color = c.tick;
+        chart.update();
+    }
+
+    function watchTheme(chart) {
+        new MutationObserver(function() { applyTheme(chart); })
+            .observe(document.documentElement, { attributes: true, attributeFilter: ['data-bs-theme'] });
+    }
+
+    var crosshairPlugin = {
+        id: 'crosshair',
+        afterDraw: function(chart) {
+            if (chart.tooltip && chart.tooltip.opacity > 0) {
+                var x = chart.tooltip.caretX;
+                var ctx = chart.ctx;
+                var yAxis = chart.scales.y;
+                ctx.save();
+                ctx.beginPath();
+                ctx.moveTo(x, yAxis.top);
+                ctx.lineTo(x, yAxis.bottom);
+                ctx.lineWidth = 1;
+                ctx.strokeStyle = cssVar('--bs-secondary-color');
+                ctx.setLineDash([4, 4]);
+                ctx.stroke();
+                ctx.restore();
+            }
+        }
+    };
+
+    function buildOptions(yCallback) {
+        var tc = themeColors();
+        var yTicks = { padding: 8, color: tc.tick };
+        if (yCallback) yTicks.callback = yCallback;
+        return {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { display: true, position: 'bottom', labels: { color: tc.tick, boxWidth: 10, boxHeight: 10, padding: 8, font: { size: 11 }, usePointStyle: true, pointStyle: 'circle' } },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    itemSort: function(a, b) { return b.parsed.y - a.parsed.y; },
+                    filter: function(item) { return item.parsed.y > 0; }
+                },
+                zoom: {
+                    zoom: {
+                        drag: { enabled: true, backgroundColor: 'rgba(var(--bs-info-rgb), 0.15)', borderColor: 'rgba(var(--bs-info-rgb), 0.5)', borderWidth: 1 },
+                        mode: 'x'
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    type: 'time',
+                    time: { unit: 'day', tooltipFormat: 'dd/MM/yyyy', displayFormats: { day: 'dd/MM', week: 'dd/MM', month: 'MMM yy' } },
+                    border: { display: false },
+                    grid: { display: false },
+                    ticks: { maxTicksLimit: 12, color: tc.tick }
+                },
+                y: { stacked: true, border: { display: false }, grid: { drawTicks: false, color: tc.grid }, ticks: yTicks }
+            }
+        };
+    }
+
+    function buildDatasets(field) {
+        return clientSeries.map(function(s, i) {
+            var color = colorForIndex(i);
+            return {
+                label: s.name,
+                data: (s.daily || []).map(function(d) { return { x: d.day, y: d[field] }; }),
+                cubicInterpolationMode: 'monotone',
+                pointRadius: 0,
+                pointHoverRadius: 4,
+                borderWidth: 1.5,
+                fill: true,
+                borderColor: color,
+                backgroundColor: hexToRgba(color, 0.35)
+            };
+        });
+    }
+
+    var execCanvas = document.getElementById('execChart');
+    if (execCanvas) {
+        var execChart = new Chart(execCanvas, {
+            type: 'line',
+            data: { datasets: buildDatasets('count') },
+            options: buildOptions(null),
+            plugins: [crosshairPlugin]
+        });
+        watchTheme(execChart);
+        var execResetBtn = document.getElementById('execChartReset');
+        execCanvas.addEventListener('dblclick', function() { execChart.resetZoom(); execResetBtn.classList.add('d-none'); });
+        execResetBtn.addEventListener('click', function() { execChart.resetZoom(); execResetBtn.classList.add('d-none'); });
+        execChart.options.plugins.zoom.zoom.onZoomComplete = function() { execResetBtn.classList.remove('d-none'); };
+    }
+
+    var costCanvas = document.getElementById('costChart');
+    if (costCanvas) {
+        var costChart = new Chart(costCanvas, {
+            type: 'line',
+            data: { datasets: buildDatasets('cost') },
+            options: buildOptions(function(v) { return v.toFixed(4) + '€'; }),
+            plugins: [crosshairPlugin]
+        });
+        watchTheme(costChart);
+        var costResetBtn = document.getElementById('costChartReset');
+        costCanvas.addEventListener('dblclick', function() { costChart.resetZoom(); costResetBtn.classList.add('d-none'); });
+        costResetBtn.addEventListener('click', function() { costChart.resetZoom(); costResetBtn.classList.add('d-none'); });
+        costChart.options.plugins.zoom.zoom.onZoomComplete = function() { costResetBtn.classList.remove('d-none'); };
+    }
+});
+</script>

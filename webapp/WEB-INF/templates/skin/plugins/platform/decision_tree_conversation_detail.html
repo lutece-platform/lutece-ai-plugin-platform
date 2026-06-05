@@ -1,0 +1,107 @@
+<#ftl output_format="HTML">
+<#include "commons/page_header_decision_tree.html">
+
+<script src="js/marked.min.js"></script>
+
+
+<#if !conversation_steps?has_content>
+ <div class="card w-100">
+  <div class="card-body d-flex flex-column align-items-center justify-content-center py-5 text-center">
+   <i class="ti ti-messages text-secondary mb-3" style="font-size: 3rem;"></i>
+   <p class="fw-semibold mb-1">#i18n{platform.agent.decision_tree_conversation_detail.noSteps}</p>
+  </div>
+ </div>
+<#else>
+ <div class="py-3">
+
+  <#-- Welcome message -->
+  <#if (decision_tree.welcomeMessage!)?has_content>
+  <div class="d-flex mb-3">
+   <div class="d-flex align-items-start gap-2" style="max-width: 80%;">
+    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px;">
+     <i class="ti ti-binary-tree" style="font-size: 1rem;"></i>
+    </div>
+    <div class="card">
+     <div class="card-body py-2 px-3">
+      <p class="mb-0">${decision_tree.welcomeMessage!}</p>
+     </div>
+    </div>
+   </div>
+  </div>
+  </#if>
+
+  <#list conversation_steps as step>
+   <#assign nodeKey = step.nodeId?c>
+   <#assign nodeContent = "">
+   <#if node_map?? && node_map[nodeKey]??>
+    <#assign nodeContent = (node_map[nodeKey].content)!"">
+   </#if>
+
+   <#-- User bubble: chosen transition (what the user clicked to arrive here) -->
+   <#if step.chosenTransitionLabel?? && step.chosenTransitionLabel?has_content>
+   <div class="d-flex justify-content-end mb-3">
+    <div style="max-width: 80%;">
+     <div class="card bg-secondary text-white">
+      <div class="card-body py-2 px-3">
+       ${step.chosenTransitionLabel}
+      </div>
+     </div>
+    </div>
+   </div>
+   </#if>
+
+   <#-- Bot bubble: node content -->
+   <div class="d-flex mb-3">
+    <div class="d-flex align-items-start gap-2" style="max-width: 80%;">
+     <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px;">
+      <i class="ti ti-binary-tree" style="font-size: 1rem;"></i>
+     </div>
+     <div class="card">
+      <div class="card-body py-2 px-3">
+       <#if nodeContent?has_content>
+        <div class="md-content" id="md_${step?index}"></div>
+       <#else>
+        <p class="mb-0 fw-medium">${step.nodeTitle!}</p>
+       </#if>
+       <p class="mb-0 small text-secondary mt-1">${step.stepTime?string("HH:mm:ss")}</p>
+      </div>
+     </div>
+    </div>
+   </div>
+  </#list>
+
+  <#-- End marker -->
+  <#assign endMsg = (decision_tree.endMessage!)?has_content?then(decision_tree.endMessage, "#i18n{platform.agent.decision_tree.preview.endReached}")>
+  <div class="d-flex mb-3">
+   <div class="d-flex align-items-start gap-2" style="max-width: 80%;">
+    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px;">
+     <i class="ti ti-binary-tree" style="font-size: 1rem;"></i>
+    </div>
+    <div class="card">
+     <div class="card-body py-2 px-3">
+      <p class="mb-0 fw-medium"><i class="ti ti-check me-1"></i>${endMsg}</p>
+     </div>
+    </div>
+   </div>
+  </div>
+ </div>
+</#if>
+
+<script>
+<#outputformat "plainText">
+var nodeContents = {
+<#list conversation_steps as step>
+ <#assign nodeKey = step.nodeId?c>
+ <#if node_map?? && node_map[nodeKey]?? && (node_map[nodeKey].content!"")?has_content>
+ "${step?index}": "${node_map[nodeKey].content?js_string}",
+ </#if>
+</#list>
+};
+</#outputformat>
+Object.keys(nodeContents).forEach(function(idx) {
+ var el = document.getElementById('md_' + idx);
+ if (el && typeof marked !== 'undefined') {
+  el.innerHTML = marked.parse(nodeContents[idx]);
+ }
+});
+</script>

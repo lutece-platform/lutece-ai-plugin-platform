@@ -1,0 +1,605 @@
+-- liquibase formatted sql
+-- changeset lutece-global-pom:create_db_platform.sql
+-- preconditions onFail:MARK_RAN onError:WARN
+
+-- =============================================================================
+-- LuteceAI platform — full schema (regenerated from a clean DB dump)
+-- All tables created in one pass. Foreign key checks disabled during creation
+-- so the alphabetical ordering doesn't matter.
+-- =============================================================================
+
+SET FOREIGN_KEY_CHECKS=0;
+
+
+CREATE TABLE `platform_decision_node` (
+  `id_decision_node` int(11) NOT NULL AUTO_INCREMENT,
+  `tree_id` int(11) NOT NULL,
+  `node_title` varchar(255) DEFAULT NULL,
+  `show_back_button` smallint(6) NOT NULL DEFAULT 0,
+  `back_target_node_id` int(11) DEFAULT NULL,
+  `content` mediumtext DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id_decision_node`),
+  KEY `fk_decision_node_tree` (`tree_id`),
+  CONSTRAINT `fk_decision_node_tree` FOREIGN KEY (`tree_id`) REFERENCES `platform_decision_tree` (`id_decision_tree`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+
+CREATE TABLE `platform_decision_transition` (
+  `id_decision_transition` int(11) NOT NULL AUTO_INCREMENT,
+  `source_node_id` int(11) NOT NULL,
+  `target_node_id` int(11) NOT NULL,
+  `label` varchar(500) DEFAULT NULL,
+  `sort_order` int(11) NOT NULL DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id_decision_transition`),
+  KEY `fk_transition_source` (`source_node_id`),
+  KEY `fk_transition_target` (`target_node_id`),
+  CONSTRAINT `fk_transition_source` FOREIGN KEY (`source_node_id`) REFERENCES `platform_decision_node` (`id_decision_node`) ON DELETE CASCADE,
+  CONSTRAINT `fk_transition_target` FOREIGN KEY (`target_node_id`) REFERENCES `platform_decision_node` (`id_decision_node`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+
+CREATE TABLE `platform_bot_pipeline` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `id_bot` int(11) NOT NULL,
+  `id_pipeline` int(11) NOT NULL,
+  `tool_description` mediumtext DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_bot_pipeline` (`id_bot`,`id_pipeline`),
+  KEY `idx_bot_pipeline_bot` (`id_bot`),
+  KEY `idx_bot_pipeline_pipeline` (`id_pipeline`),
+  CONSTRAINT `fk_bot_pipeline_bot` FOREIGN KEY (`id_bot`) REFERENCES `platform_bot` (`bot_id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_bot_pipeline_pipeline` FOREIGN KEY (`id_pipeline`) REFERENCES `platform_pipeline` (`id_pipeline`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `platform_decision_tree_conversation_step` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `conversation_id` varchar(36) NOT NULL,
+  `node_id` int(11) NOT NULL,
+  `node_title` varchar(255) DEFAULT NULL,
+  `chosen_transition_id` int(11) DEFAULT NULL,
+  `step_time` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_dt_step_conversation` (`conversation_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+
+CREATE TABLE `platform_bot_conversation` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `bot_id` int(11) NOT NULL,
+  `conversation_uuid` varchar(36) NOT NULL,
+  `user_id` varchar(255) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_conversation_uuid` (`conversation_uuid`),
+  KEY `idx_conversation_bot` (`bot_id`),
+  KEY `idx_conversation_user` (`user_id`),
+  KEY `idx_conversation_bot_user` (`bot_id`,`user_id`),
+  KEY `idx_conversation_created` (`created_at`),
+  CONSTRAINT `fk_conversation_bot` FOREIGN KEY (`bot_id`) REFERENCES `platform_bot` (`bot_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `platform_pipeline` (
+  `id_pipeline` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) NOT NULL,
+  `description` mediumtext DEFAULT NULL,
+  `max_concurrent_workers` int(11) NOT NULL DEFAULT 1,
+  `rate_limit_by_user_by_day` int(11) DEFAULT 0,
+  `id_client` int(11) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id_pipeline`),
+  KEY `idx_pipeline_client` (`id_client`),
+  KEY `idx_pipeline_name_client` (`name`,`id_client`),
+  CONSTRAINT `fk_pipeline_client` FOREIGN KEY (`id_client`) REFERENCES `platform_client` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `platform_dataset` (
+  `dataset_id` int(11) NOT NULL AUTO_INCREMENT,
+  `dataset_name` varchar(255) NOT NULL,
+  `dataset_description` mediumtext DEFAULT NULL,
+  `embed_provider_id` int(11) NOT NULL,
+  `llm_provider_id` int(11) NOT NULL,
+  `client_id` int(11) NOT NULL,
+  `dataset_routing_rules` mediumtext DEFAULT NULL,
+  `weight` decimal(4,2) DEFAULT 1.00 COMMENT 'Weight for ranking fusion (0.1 to 10.0)',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`dataset_id`),
+  KEY `idx_dataset_client` (`client_id`),
+  KEY `idx_dataset_embed_provider` (`embed_provider_id`),
+  KEY `idx_dataset_llm_provider` (`llm_provider_id`),
+  KEY `idx_dataset_name_client` (`dataset_name`,`client_id`),
+  KEY `idx_dataset_weight` (`weight`),
+  CONSTRAINT `fk_dataset_client` FOREIGN KEY (`client_id`) REFERENCES `platform_client` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_dataset_embed_provider` FOREIGN KEY (`embed_provider_id`) REFERENCES `platform_provider` (`provider_id`),
+  CONSTRAINT `fk_dataset_llm_provider` FOREIGN KEY (`llm_provider_id`) REFERENCES `platform_provider` (`provider_id`),
+  CONSTRAINT `chk_dataset_weight` CHECK (`weight` >= 0.1 and `weight` <= 10.0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `platform_query_job` (
+  `job_id` int(11) NOT NULL AUTO_INCREMENT,
+  `bot_id` int(11) NOT NULL,
+  `query` text NOT NULL,
+  `conversation_uuid` varchar(36) DEFAULT NULL,
+  `user_id` varchar(255) DEFAULT NULL,
+  `status` varchar(50) NOT NULL DEFAULT 'pending',
+  `stream_id` varchar(255) DEFAULT NULL,
+  `error_message` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`job_id`),
+  KEY `idx_query_job_bot` (`bot_id`),
+  KEY `idx_query_job_stream` (`stream_id`),
+  KEY `idx_query_job_conversation` (`conversation_uuid`),
+  KEY `idx_query_job_user` (`user_id`),
+  KEY `idx_query_job_status` (`status`),
+  KEY `idx_query_job_created` (`created_at`),
+  CONSTRAINT `fk_query_job_bot` FOREIGN KEY (`bot_id`) REFERENCES `platform_bot` (`bot_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `platform_vision_extractor` (
+  `extractor_id` int(11) NOT NULL AUTO_INCREMENT,
+  `vision_id` int(11) NOT NULL,
+  `extractor_name` varchar(255) NOT NULL,
+  `extractor_description` mediumtext DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`extractor_id`),
+  KEY `idx_extractor_vision` (`vision_id`),
+  KEY `idx_extractor_name_vision` (`extractor_name`,`vision_id`),
+  CONSTRAINT `fk_extractor_vision` FOREIGN KEY (`vision_id`) REFERENCES `platform_vision` (`vision_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `platform_bot` (
+  `bot_id` int(11) NOT NULL AUTO_INCREMENT,
+  `bot_name` varchar(255) NOT NULL,
+  `bot_description` mediumtext DEFAULT NULL,
+  `bot_system_prompt` mediumtext DEFAULT NULL,
+  `logo_base64` mediumtext DEFAULT NULL,
+  `welcome_message` mediumtext DEFAULT NULL,
+  `client_id` int(11) NOT NULL,
+  `llm_provider_id` int(11) NOT NULL,
+  `embed_provider_id` int(11) NOT NULL,
+  `max_tokens` int(11) NOT NULL DEFAULT 4000,
+  `temperature` decimal(3,2) DEFAULT 0.70,
+  `rate_limit_by_user_by_day` int(11) DEFAULT 0,
+  `enable_content_aggregation` tinyint(1) DEFAULT 0,
+  `aggregation_max_results` int(11) DEFAULT 5,
+  `aggregation_strategy` varchar(50) DEFAULT 'DEFAULT',
+  `query_enhancement_mode` varchar(50) DEFAULT 'NONE',
+  `query_expansion_variants` int(11) DEFAULT 3,
+  `hyde_max_tokens` int(11) DEFAULT 500,
+  `hyde_prompt_template` mediumtext DEFAULT NULL,
+  `semantic_search_max_results` int(11) DEFAULT 15,
+  `semantic_search_min_score` decimal(3,2) DEFAULT 0.70,
+  `enable_builtin_tools` tinyint(1) DEFAULT 0,
+  `is_active` tinyint(1) DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`bot_id`),
+  KEY `idx_bot_client` (`client_id`),
+  KEY `idx_bot_llm_provider` (`llm_provider_id`),
+  KEY `idx_bot_embed_provider` (`embed_provider_id`),
+  KEY `idx_bot_name_client` (`bot_name`,`client_id`),
+  KEY `idx_bot_active` (`is_active`),
+  CONSTRAINT `fk_bot_client` FOREIGN KEY (`client_id`) REFERENCES `platform_client` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_bot_embed_provider` FOREIGN KEY (`embed_provider_id`) REFERENCES `platform_provider` (`provider_id`),
+  CONSTRAINT `fk_bot_llm_provider` FOREIGN KEY (`llm_provider_id`) REFERENCES `platform_provider` (`provider_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `platform_dataset_document` (
+  `document_id` int(11) NOT NULL AUTO_INCREMENT,
+  `document_name` varchar(255) NOT NULL,
+  `document_description` mediumtext DEFAULT NULL,
+  `document_file_key` varchar(255) NOT NULL,
+  `dataset_id` int(11) NOT NULL,
+  `folder_id` int(11) DEFAULT NULL COMMENT 'Folder this document belongs to (NULL = root of dataset)',
+  `full_content` longtext DEFAULT NULL COMMENT 'Full parsed text content for built-in tools (read, grep)',
+  `use_document_intelligence` tinyint(1) DEFAULT 0 COMMENT 'Whether to use Document Intelligence for parsing',
+  `document_intelligence_provider_id` int(11) DEFAULT NULL COMMENT 'ID of the Document Intelligence provider to use',
+  `chunk_size` int(11) DEFAULT 1000 COMMENT 'Size of text chunks for embeddings',
+  `chunk_overlap` int(11) DEFAULT 200 COMMENT 'Overlap between text chunks',
+  `weight` decimal(4,2) DEFAULT 1.00 COMMENT 'Weight for ranking fusion (0.1 to 10.0)',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`document_id`),
+  UNIQUE KEY `uk_document_file_key` (`document_file_key`),
+  KEY `idx_document_dataset` (`dataset_id`),
+  KEY `idx_document_name_dataset` (`document_name`,`dataset_id`),
+  KEY `idx_document_folder_id` (`dataset_id`,`folder_id`),
+  KEY `idx_doc_intelligence` (`use_document_intelligence`,`document_intelligence_provider_id`),
+  KEY `fk_dataset_document_di_provider` (`document_intelligence_provider_id`),
+  KEY `idx_document_weight` (`weight`),
+  CONSTRAINT `fk_dataset_document_di_provider` FOREIGN KEY (`document_intelligence_provider_id`) REFERENCES `platform_provider` (`provider_id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_document_dataset` FOREIGN KEY (`dataset_id`) REFERENCES `platform_dataset` (`dataset_id`) ON DELETE CASCADE,
+  CONSTRAINT `chk_document_weight` CHECK (`weight` >= 0.1 and `weight` <= 10.0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `platform_pipeline_user_rate_limit` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` varchar(255) NOT NULL,
+  `pipeline_id` int(11) NOT NULL,
+  `execution_count` int(11) NOT NULL DEFAULT 0,
+  `date_first_execution` timestamp NOT NULL DEFAULT current_timestamp(),
+  `date_last_execution` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_user_pipeline_date` (`user_id`,`pipeline_id`,`date_first_execution`),
+  KEY `idx_pipeline_rate_limit_pipeline` (`pipeline_id`),
+  KEY `idx_pipeline_rate_limit_date` (`date_first_execution`),
+  CONSTRAINT `fk_pipeline_rate_limit_pipeline` FOREIGN KEY (`pipeline_id`) REFERENCES `platform_pipeline` (`id_pipeline`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `platform_provider` (
+  `provider_id` int(11) NOT NULL AUTO_INCREMENT,
+  `provider_name` varchar(255) NOT NULL,
+  `provider_description` mediumtext DEFAULT NULL,
+  `provider_type` varchar(50) NOT NULL,
+  `provider_vendor` varchar(50) DEFAULT 'azure_openai' COMMENT 'Provider vendor: azure_openai, anthropic, mistral',
+  `deployment_name` varchar(255) DEFAULT NULL,
+  `deployment_model_name` varchar(255) NOT NULL,
+  `deployment_endpoint` varchar(255) DEFAULT NULL,
+  `deployment_api_version` varchar(50) DEFAULT NULL,
+  `deployment_api_key` varchar(255) NOT NULL,
+  `token_input_price_1m` decimal(10,6) DEFAULT NULL,
+  `token_output_price_1m` decimal(10,6) DEFAULT NULL,
+  `document_analysis_price_1000_pages` decimal(10,4) DEFAULT NULL COMMENT 'Price per 1000 pages for document analysis (used for Document Intelligence providers)',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`provider_id`),
+  KEY `idx_provider_type` (`provider_type`),
+  KEY `idx_provider_vendor` (`provider_vendor`),
+  KEY `idx_provider_type_doc_intel` (`provider_type`,`document_analysis_price_1000_pages`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `platform_document_job` (
+  `job_id` int(11) NOT NULL AUTO_INCREMENT,
+  `document_id` int(11) NOT NULL,
+  `dataset_id` int(11) NOT NULL,
+  `status` varchar(50) NOT NULL DEFAULT 'pending',
+  `error_message` mediumtext DEFAULT NULL,
+  `progress_percentage` tinyint(3) DEFAULT 0,
+  `attempts` int(11) NOT NULL DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`job_id`),
+  KEY `idx_job_document` (`document_id`),
+  KEY `idx_job_dataset` (`dataset_id`),
+  KEY `idx_job_status` (`status`),
+  KEY `idx_job_created` (`created_at`),
+  CONSTRAINT `fk_job_dataset` FOREIGN KEY (`dataset_id`) REFERENCES `platform_dataset` (`dataset_id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_job_document` FOREIGN KEY (`document_id`) REFERENCES `platform_dataset_document` (`document_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `platform_pipeline_execution` (
+  `id_execution` int(11) NOT NULL AUTO_INCREMENT,
+  `execution_id` varchar(255) NOT NULL,
+  `id_pipeline` int(11) NOT NULL,
+  `id_client` int(11) NOT NULL,
+  `user_id` varchar(255) DEFAULT NULL,
+  `status` varchar(50) NOT NULL DEFAULT 'PENDING',
+  `date_creation` timestamp NOT NULL DEFAULT current_timestamp(),
+  `date_completion` timestamp NULL DEFAULT NULL,
+  `inputs` longtext DEFAULT NULL,
+  `outputs` longtext DEFAULT NULL,
+  `error` mediumtext DEFAULT NULL,
+  PRIMARY KEY (`id_execution`),
+  UNIQUE KEY `uk_execution_id` (`execution_id`),
+  KEY `idx_pipe_exec_pipeline` (`id_pipeline`),
+  KEY `idx_pipe_exec_client` (`id_client`),
+  KEY `idx_pipe_exec_status` (`status`),
+  KEY `idx_pipe_exec_status_pipeline` (`status`,`id_pipeline`),
+  KEY `idx_pipe_exec_creation` (`date_creation`),
+  CONSTRAINT `fk_pipeline_execution_client` FOREIGN KEY (`id_client`) REFERENCES `platform_client` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_pipeline_execution_pipeline` FOREIGN KEY (`id_pipeline`) REFERENCES `platform_pipeline` (`id_pipeline`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `platform_decision_tree` (
+  `id_decision_tree` int(11) NOT NULL AUTO_INCREMENT,
+  `tree_name` varchar(255) NOT NULL,
+  `tree_description` mediumtext DEFAULT NULL,
+  `client_id` int(11) NOT NULL,
+  `welcome_message` mediumtext DEFAULT NULL,
+  `end_message` mediumtext DEFAULT NULL,
+  `logo_base64` mediumtext DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id_decision_tree`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+
+CREATE TABLE `platform_bot_mcp_server` (
+  `bot_id` int(11) NOT NULL,
+  `mcp_server_id` int(11) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`bot_id`,`mcp_server_id`),
+  KEY `idx_bot_mcp_server_server` (`mcp_server_id`),
+  CONSTRAINT `fk_bot_mcp_server_bot` FOREIGN KEY (`bot_id`) REFERENCES `platform_bot` (`bot_id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_bot_mcp_server_server` FOREIGN KEY (`mcp_server_id`) REFERENCES `platform_mcp_server` (`mcp_server_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `platform_dataset_folder` (
+  `folder_id` int(11) NOT NULL AUTO_INCREMENT,
+  `dataset_id` int(11) NOT NULL,
+  `parent_folder_id` int(11) DEFAULT NULL COMMENT 'Parent folder (NULL = root of dataset)',
+  `folder_name` varchar(255) NOT NULL,
+  `folder_description` mediumtext DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`folder_id`),
+  UNIQUE KEY `uk_folder_dataset_parent_name` (`dataset_id`,`parent_folder_id`,`folder_name`),
+  KEY `idx_folder_dataset` (`dataset_id`),
+  KEY `idx_folder_parent` (`parent_folder_id`),
+  CONSTRAINT `fk_folder_dataset` FOREIGN KEY (`dataset_id`) REFERENCES `platform_dataset` (`dataset_id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_folder_parent` FOREIGN KEY (`parent_folder_id`) REFERENCES `platform_dataset_folder` (`folder_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `platform_subscription` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `id_client` int(11) NOT NULL,
+  `resource_type` varchar(100) NOT NULL,
+  `resource_id` varchar(100) NOT NULL,
+  `subscription_date` timestamp NOT NULL DEFAULT current_timestamp(),
+  `status` varchar(50) DEFAULT 'active',
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_client_resource` (`id_client`,`resource_type`,`resource_id`),
+  KEY `idx_subscription_client` (`id_client`),
+  KEY `idx_subscription_status` (`status`),
+  KEY `idx_subscription_type` (`resource_type`),
+  CONSTRAINT `fk_subscription_client` FOREIGN KEY (`id_client`) REFERENCES `platform_client` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `platform_pipeline_trigger` (
+  `id_trigger` int(11) NOT NULL AUTO_INCREMENT,
+  `id_pipeline` int(11) NOT NULL,
+  `id_client` int(11) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `trigger_type` varchar(50) NOT NULL DEFAULT 'CRON',
+  `configuration` mediumtext DEFAULT NULL,
+  `input_data` mediumtext DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 0,
+  `last_triggered_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id_trigger`),
+  KEY `idx_trigger_pipeline` (`id_pipeline`),
+  KEY `idx_trigger_active` (`is_active`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+
+CREATE TABLE `platform_mcp_server` (
+  `mcp_server_id` int(11) NOT NULL AUTO_INCREMENT,
+  `mcp_server_name` varchar(255) NOT NULL COMMENT 'Logical key — also used as tool name prefix',
+  `mcp_server_description` mediumtext DEFAULT NULL,
+  `transport_type` varchar(50) NOT NULL COMMENT 'streamable_http | sse | websocket',
+  `url` varchar(512) NOT NULL,
+  `headers_json` mediumtext DEFAULT NULL COMMENT 'JSON-serialized HTTP headers (e.g. {"Authorization":"Bearer xxx"})',
+  `timeout_ms` int(11) DEFAULT 60000,
+  `enabled` tinyint(1) DEFAULT 1,
+  `tool_filter` varchar(1024) DEFAULT NULL COMMENT 'CSV of allowed tool names (NULL/empty = all tools)',
+  `log_requests` tinyint(1) DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`mcp_server_id`),
+  UNIQUE KEY `uk_mcp_server_name` (`mcp_server_name`),
+  KEY `idx_mcp_server_enabled` (`enabled`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `platform_pipeline_version` (
+  `id_version` int(11) NOT NULL AUTO_INCREMENT,
+  `id_pipeline` int(11) NOT NULL,
+  `version_name` varchar(255) NOT NULL,
+  `description` mediumtext DEFAULT NULL,
+  `flow` longtext NOT NULL,
+  `is_current` tinyint(1) DEFAULT 0,
+  `input_schema` longtext DEFAULT NULL,
+  `date_creation` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id_version`),
+  UNIQUE KEY `uk_pipeline_version_name` (`id_pipeline`,`version_name`),
+  KEY `idx_version_pipeline` (`id_pipeline`),
+  KEY `idx_version_current` (`id_pipeline`,`is_current`),
+  CONSTRAINT `fk_version_pipeline` FOREIGN KEY (`id_pipeline`) REFERENCES `platform_pipeline` (`id_pipeline`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `platform_bot_dataset` (
+  `bot_id` int(11) NOT NULL,
+  `dataset_id` int(11) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`bot_id`,`dataset_id`),
+  KEY `idx_bot_dataset_dataset` (`dataset_id`),
+  CONSTRAINT `fk_bot_dataset_bot` FOREIGN KEY (`bot_id`) REFERENCES `platform_bot` (`bot_id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_bot_dataset_dataset` FOREIGN KEY (`dataset_id`) REFERENCES `platform_dataset` (`dataset_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `platform_observability_resource_node_execution` (
+  `id_node_execution` int(11) NOT NULL AUTO_INCREMENT,
+  `execution_id` varchar(255) NOT NULL,
+  `node_id` varchar(255) NOT NULL,
+  `node_name` varchar(255) DEFAULT NULL,
+  `status` varchar(50) NOT NULL,
+  `start_time` timestamp NULL DEFAULT NULL,
+  `end_time` timestamp NULL DEFAULT NULL,
+  `duration_ms` int(11) DEFAULT NULL,
+  `input_data` mediumtext DEFAULT NULL,
+  `output_data` mediumtext DEFAULT NULL,
+  `error_message` mediumtext DEFAULT NULL,
+  `execution_order` int(11) DEFAULT NULL,
+  `total_cost` decimal(10,8) DEFAULT NULL,
+  PRIMARY KEY (`id_node_execution`),
+  KEY `idx_node_execution_id` (`execution_id`),
+  KEY `idx_node_execution_node` (`node_id`),
+  KEY `idx_node_execution_order` (`execution_id`,`execution_order`),
+  KEY `idx_node_execution_start_time` (`start_time`),
+  CONSTRAINT `fk_node_execution` FOREIGN KEY (`execution_id`) REFERENCES `platform_observability_resource_execution` (`execution_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `platform_client` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) NOT NULL,
+  `code` varchar(255) NOT NULL,
+  `description` mediumtext DEFAULT NULL,
+  `active` tinyint(1) DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_client_code` (`code`),
+  KEY `idx_client_active` (`active`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `platform_conversation_message_feedback` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `message_id` int(11) NOT NULL,
+  `user_id` varchar(255) NOT NULL,
+  `bot_id` int(11) NOT NULL,
+  `client_id` int(11) NOT NULL DEFAULT 0,
+  `is_positive` tinyint(1) NOT NULL,
+  `comment` text DEFAULT NULL,
+  `status` varchar(50) NOT NULL DEFAULT 'pending',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_feedback_message` (`message_id`),
+  KEY `idx_feedback_message` (`message_id`),
+  KEY `idx_feedback_user` (`user_id`),
+  KEY `idx_feedback_bot` (`bot_id`),
+  KEY `idx_feedback_client` (`client_id`),
+  KEY `idx_feedback_status` (`status`),
+  KEY `idx_feedback_positive` (`is_positive`),
+  KEY `idx_feedback_created` (`created_at`),
+  KEY `idx_feedback_bot_status` (`bot_id`,`status`),
+  CONSTRAINT `fk_feedback_bot` FOREIGN KEY (`bot_id`) REFERENCES `platform_bot` (`bot_id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_feedback_message` FOREIGN KEY (`message_id`) REFERENCES `platform_conversation_message` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `platform_bot_user_rate_limit` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` varchar(255) NOT NULL,
+  `bot_id` int(11) NOT NULL,
+  `message_count` int(11) NOT NULL DEFAULT 0,
+  `date_first_message` timestamp NOT NULL DEFAULT current_timestamp(),
+  `date_last_message` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_user_bot_date` (`user_id`,`bot_id`,`date_first_message`),
+  KEY `idx_rate_limit_bot` (`bot_id`),
+  KEY `idx_rate_limit_date` (`date_first_message`),
+  CONSTRAINT `fk_rate_limit_bot` FOREIGN KEY (`bot_id`) REFERENCES `platform_bot` (`bot_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `platform_vision` (
+  `vision_id` int(11) NOT NULL AUTO_INCREMENT,
+  `vision_title` varchar(255) NOT NULL,
+  `vision_description` mediumtext DEFAULT NULL,
+  `provider_id` int(11) NOT NULL,
+  `client_id` int(11) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`vision_id`),
+  KEY `idx_vision_provider` (`provider_id`),
+  KEY `idx_vision_client` (`client_id`),
+  KEY `idx_vision_title_client` (`vision_title`,`client_id`),
+  CONSTRAINT `fk_vision_client` FOREIGN KEY (`client_id`) REFERENCES `platform_client` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_vision_provider` FOREIGN KEY (`provider_id`) REFERENCES `platform_provider` (`provider_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `platform_decision_tree_image` (
+  `content_hash` varchar(64) NOT NULL,
+  `tree_id` int(11) NOT NULL,
+  `file_store_key` varchar(255) NOT NULL,
+  `mime_type` varchar(100) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`content_hash`,`tree_id`),
+  KEY `idx_decision_tree_image_tree` (`tree_id`),
+  CONSTRAINT `fk_decision_tree_image_tree` FOREIGN KEY (`tree_id`) REFERENCES `platform_decision_tree` (`id_decision_tree`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `platform_observability_resource_node_trace` (
+  `id_trace` int(11) NOT NULL AUTO_INCREMENT,
+  `id_node_execution` int(11) NOT NULL,
+  `message` mediumtext DEFAULT NULL,
+  `data` mediumtext DEFAULT NULL,
+  `timestamp` timestamp NOT NULL DEFAULT current_timestamp(),
+  `status` varchar(50) DEFAULT NULL,
+  `cost` decimal(10,8) DEFAULT NULL,
+  PRIMARY KEY (`id_trace`),
+  KEY `idx_trace_node_execution` (`id_node_execution`),
+  KEY `idx_trace_timestamp` (`timestamp`),
+  KEY `idx_trace_status` (`status`),
+  CONSTRAINT `fk_trace_node_execution` FOREIGN KEY (`id_node_execution`) REFERENCES `platform_observability_resource_node_execution` (`id_node_execution`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `platform_conversation_message` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `conversation_id` int(11) NOT NULL,
+  `message` text DEFAULT NULL,
+  `role` varchar(50) NOT NULL,
+  `metadata` mediumtext DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_message_conversation` (`conversation_id`),
+  KEY `idx_message_role` (`role`),
+  KEY `idx_message_created` (`created_at`),
+  CONSTRAINT `fk_message_conversation` FOREIGN KEY (`conversation_id`) REFERENCES `platform_bot_conversation` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `platform_model` (
+  `model_id` int(11) NOT NULL AUTO_INCREMENT,
+  `client_id` int(11) NOT NULL,
+  `provider_id` int(11) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`model_id`),
+  UNIQUE KEY `uk_client_provider` (`client_id`,`provider_id`),
+  KEY `idx_model_client` (`client_id`),
+  KEY `idx_model_provider` (`provider_id`),
+  CONSTRAINT `fk_model_client` FOREIGN KEY (`client_id`) REFERENCES `platform_client` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_model_provider` FOREIGN KEY (`provider_id`) REFERENCES `platform_provider` (`provider_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `platform_decision_tree_conversation` (
+  `conversation_id` varchar(36) NOT NULL,
+  `tree_id` int(11) NOT NULL,
+  `client_id` int(11) NOT NULL,
+  `start_time` timestamp NOT NULL DEFAULT current_timestamp(),
+  `last_step_time` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`conversation_id`),
+  KEY `idx_dt_conv_tree_client` (`tree_id`,`client_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+
+CREATE TABLE `platform_vision_extractor_field` (
+  `field_id` int(11) NOT NULL AUTO_INCREMENT,
+  `extractor_id` int(11) NOT NULL,
+  `field_name` varchar(255) NOT NULL,
+  `field_description` mediumtext DEFAULT NULL,
+  `field_type` varchar(50) NOT NULL,
+  `field_order` tinyint(3) DEFAULT 0,
+  `is_required` tinyint(1) DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`field_id`),
+  KEY `idx_field_extractor` (`extractor_id`),
+  KEY `idx_field_name_extractor` (`field_name`,`extractor_id`),
+  KEY `idx_field_order` (`extractor_id`,`field_order`),
+  CONSTRAINT `fk_field_extractor` FOREIGN KEY (`extractor_id`) REFERENCES `platform_vision_extractor` (`extractor_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `platform_observability_resource_execution` (
+  `execution_id` varchar(255) NOT NULL,
+  `resource_type` varchar(255) NOT NULL,
+  `resource_id` varchar(255) NOT NULL,
+  `client_id` int(11) DEFAULT NULL,
+  `status` varchar(50) NOT NULL,
+  `start_time` timestamp NULL DEFAULT NULL,
+  `end_time` timestamp NULL DEFAULT NULL,
+  `duration_ms` int(11) DEFAULT NULL,
+  `error_message` mediumtext DEFAULT NULL,
+  `input_data` mediumtext DEFAULT NULL,
+  `output_data` mediumtext DEFAULT NULL,
+  `total_cost` decimal(10,8) DEFAULT NULL,
+  PRIMARY KEY (`execution_id`),
+  KEY `idx_execution_resource` (`resource_type`,`resource_id`),
+  KEY `idx_execution_client` (`client_id`),
+  KEY `idx_execution_status` (`status`),
+  KEY `idx_execution_start_time` (`start_time`),
+  KEY `idx_execution_client_status` (`client_id`,`status`),
+  CONSTRAINT `fk_execution_client` FOREIGN KEY (`client_id`) REFERENCES `platform_client` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+SET FOREIGN_KEY_CHECKS=1;

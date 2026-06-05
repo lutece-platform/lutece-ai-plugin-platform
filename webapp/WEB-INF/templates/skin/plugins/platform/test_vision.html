@@ -1,0 +1,278 @@
+<#ftl output_format="HTML">
+<#include "commons/page_header_vision.html">
+
+ <div class="row g-3">
+
+ <#-- ===== Left column ===== -->
+ <div class="col-lg-8">
+
+ <#-- Upload card -->
+ <div class="card mb-3">
+ <div class="card-body">
+ <h5 class="fw-bold mb-3"><i class="ti ti-upload me-2"></i>#i18n{platform.agent.vision.test.upload.title}</h5>
+ <div id="uploadArea" class="border-2 border border-dashed rounded-3 p-4 text-center" role="button">
+ <div id="uploadContent">
+ <i class="ti ti-upload fs-2 text-secondary"></i>
+ <p class="text-secondary mt-2">#i18n{platform.agent.vision.test.upload.description}</p>
+ <input type="file" id="imageInput" accept="image/*" class="d-none">
+ <button type="button" class="btn btn-primary mt-2" id="selectImageBtn">
+ <i class="ti ti-upload me-1"></i>#i18n{platform.agent.vision.test.upload.selectButton}
+ </button>
+ </div>
+ <div id="uploadPreview" class="d-none">
+ <img id="previewImage" src="" alt="Preview" class="mw-100 mx-auto rounded" style="max-height:16rem">
+ <div class="mt-2 d-flex justify-content-between align-items-center">
+ <span id="fileName" class="text-secondary small"></span>
+ <button type="button" class="btn btn-light btn-sm" id="removeImageBtn">
+ <i class="ti ti-trash me-1"></i>#i18n{platform.agent.vision.test.upload.removeButton}
+ </button>
+ </div>
+ </div>
+ </div>
+ <div class="mt-3 d-flex align-items-center gap-3">
+ <button type="button" class="btn btn-primary" id="processBtn" disabled>
+ <i class="ti ti-scan me-1"></i>#i18n{platform.agent.vision.test.processButton}
+ </button>
+ <span id="processingStatus" class="small text-secondary d-none">
+ <span class="spinner-border spinner-border-sm me-1"></span>#i18n{platform.agent.vision.test.processing}
+ </span>
+ </div>
+ </div>
+ </div>
+
+ <#-- Config display card -->
+ <div class="card">
+ <div class="card-body">
+ <h5 class="fw-bold mb-3"><i class="ti ti-list-check me-2"></i>#i18n{platform.agent.vision.test.config.title}</h5>
+ <#if (vision.extractors!)?has_content>
+ <p class="text-secondary small mb-2">#i18n{platform.agent.vision.test.config.extractors}</p>
+ <div class="list-group">
+ <#list vision.extractors as extractor>
+ <div class="list-group-item">
+ <div class="fw-medium">${extractor.extractorName!}</div>
+ <#if (extractor.extractorDescription!"")?has_content>
+ <small class="text-secondary">${extractor.extractorDescription}</small>
+ </#if>
+ <#if (extractor.fields!)?has_content>
+ <div class="mt-1">
+ <#list extractor.fields as field>
+ <span class="badge text-bg-info">${field.fieldName!}</span>
+ </#list>
+ </div>
+ </#if>
+ </div>
+ </#list>
+ </div>
+ </#if>
+ </div>
+ </div>
+
+ </div>
+
+ <#-- ===== Right column ===== -->
+ <div class="col-lg-4">
+
+ <#-- Results card -->
+ <div class="card mb-3">
+ <div class="card-body">
+ <h5 class="fw-bold mb-3"><i class="ti ti-eye me-2"></i>#i18n{platform.agent.vision.test.results.title}</h5>
+ <div id="noResults" class="text-center py-4 text-secondary">
+ <i class="ti ti-photo fs-2"></i>
+ <p class="mt-2 small">#i18n{platform.agent.vision.test.results.noResults}</p>
+ </div>
+ <div id="ocrResults" class="d-none">
+ <h6 class="fw-bold mb-2">#i18n{platform.agent.vision.test.results.ocrTitle}</h6>
+ <div class="border rounded p-3">
+ <pre id="ocrText" class="mb-0 small" style="white-space: pre-wrap; font-family: inherit;"></pre>
+ </div>
+ <div class="mt-2 d-flex justify-content-between align-items-center">
+ <span class="small text-secondary">#i18n{platform.agent.vision.test.results.ocrCharCount}: <span id="ocrCharCount">0</span></span>
+ <button type="button" class="btn btn-light btn-sm" id="copyOcrBtn">
+ <i class="ti ti-copy me-1"></i>Copy
+ </button>
+ </div>
+ </div>
+ <div id="extractionResults" class="d-none mt-3">
+ <h6 class="fw-bold mb-2">#i18n{platform.agent.vision.test.results.extractionTitle}</h6>
+ <div class="border rounded p-3">
+ <pre id="extractedData" class="mb-0" style="white-space: pre-wrap; font-family: monospace; font-size: 0.8em;"></pre>
+ </div>
+ <div class="mt-2 text-end">
+ <button type="button" class="btn btn-light btn-sm" id="copyJsonBtn">
+ <i class="ti ti-copy me-1"></i>Copy JSON
+ </button>
+ </div>
+ </div>
+ <div id="errorResults" class="d-none mt-3">
+ <div class="alert alert-danger mb-0">
+ <strong>Error:</strong> <span id="errorMessage"></span>
+ </div>
+ </div>
+ </div>
+ </div>
+
+ </div>
+ </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+ var uploadArea = document.getElementById('uploadArea');
+ var imageInput = document.getElementById('imageInput');
+ var selectImageBtn = document.getElementById('selectImageBtn');
+ var processBtn = document.getElementById('processBtn');
+ var removeImageBtn = document.getElementById('removeImageBtn');
+ var uploadPreview = document.getElementById('uploadPreview');
+ var uploadContent = document.getElementById('uploadContent');
+ var previewImage = document.getElementById('previewImage');
+ var fileNameEl = document.getElementById('fileName');
+ var processingStatus = document.getElementById('processingStatus');
+ var noResults = document.getElementById('noResults');
+ var ocrResults = document.getElementById('ocrResults');
+ var extractionResults = document.getElementById('extractionResults');
+ var errorResults = document.getElementById('errorResults');
+ var copyOcrBtn = document.getElementById('copyOcrBtn');
+ var copyJsonBtn = document.getElementById('copyJsonBtn');
+ var selectedFile = null;
+ var visionId = ${vision.id};
+
+ selectImageBtn.addEventListener('click', function(e) {
+ e.stopPropagation();
+ imageInput.click();
+ });
+
+ uploadArea.addEventListener('click', function() {
+ imageInput.click();
+ });
+
+ uploadArea.addEventListener('dragover', function(e) {
+ e.preventDefault();
+ uploadArea.classList.add('border-primary');
+ });
+
+ uploadArea.addEventListener('dragleave', function() {
+ uploadArea.classList.remove('border-primary');
+ });
+
+ uploadArea.addEventListener('drop', function(e) {
+ e.preventDefault();
+ uploadArea.classList.remove('border-primary');
+ if (e.dataTransfer.files.length > 0) {
+ handleFile(e.dataTransfer.files[0]);
+ }
+ });
+
+ imageInput.addEventListener('change', function(e) {
+ if (e.target.files.length > 0) {
+ handleFile(e.target.files[0]);
+ }
+ });
+
+ removeImageBtn.addEventListener('click', function() {
+ selectedFile = null;
+ uploadContent.classList.remove('d-none');
+ uploadPreview.classList.add('d-none');
+ processBtn.disabled = true;
+ imageInput.value = '';
+ clearResults();
+ });
+
+ processBtn.addEventListener('click', function() {
+ if (selectedFile) {
+ processImage();
+ }
+ });
+
+ copyOcrBtn.addEventListener('click', function() {
+ navigator.clipboard.writeText(document.getElementById('ocrText').textContent);
+ });
+
+ copyJsonBtn.addEventListener('click', function() {
+ navigator.clipboard.writeText(document.getElementById('extractedData').textContent);
+ });
+
+ function handleFile(file) {
+ if (!file.type.startsWith('image/')) {
+ alert('Please select an image file');
+ return;
+ }
+ if (file.size > 10 * 1024 * 1024) {
+ alert('File too large (max 10MB)');
+ return;
+ }
+ selectedFile = file;
+ fileNameEl.textContent = file.name + ' (' + formatSize(file.size) + ')';
+ var reader = new FileReader();
+ reader.onload = function(e) {
+ previewImage.src = e.target.result;
+ uploadContent.classList.add('d-none');
+ uploadPreview.classList.remove('d-none');
+ processBtn.disabled = false;
+ };
+ reader.readAsDataURL(file);
+ clearResults();
+ }
+
+ function processImage() {
+ processBtn.disabled = true;
+ processingStatus.classList.remove('d-none');
+ clearResults();
+ var reader = new FileReader();
+ reader.onload = function(e) {
+ fetch('rest/platform/agent/admin/vision/process/' + visionId, {
+ method: 'POST',
+ headers: { 'Content-Type': 'application/octet-stream' },
+ body: e.target.result
+ })
+ .then(function(r) { return r.json(); })
+ .then(function(data) {
+ noResults.classList.add('d-none');
+ if (!data.success) {
+ showError(data.message || 'Processing failed');
+ return;
+ }
+ if (data.ocrText && data.ocrText.trim()) {
+ document.getElementById('ocrText').textContent = data.ocrText;
+ document.getElementById('ocrCharCount').textContent = data.ocrText.length;
+ ocrResults.classList.remove('d-none');
+ }
+ if (data.extractedData) {
+ document.getElementById('extractedData').textContent = JSON.stringify(data.extractedData, null, 2);
+ extractionResults.classList.remove('d-none');
+ }
+ if ((!data.ocrText || !data.ocrText.trim()) && !data.extractedData) {
+ showError('No data extracted');
+ }
+ })
+ .catch(function(err) {
+ showError('Network error: ' + err.message);
+ })
+ .finally(function() {
+ processBtn.disabled = false;
+ processingStatus.classList.add('d-none');
+ });
+ };
+ reader.readAsArrayBuffer(selectedFile);
+ }
+
+ function showError(msg) {
+ noResults.classList.add('d-none');
+ document.getElementById('errorMessage').textContent = msg;
+ errorResults.classList.remove('d-none');
+ }
+
+ function clearResults() {
+ noResults.classList.remove('d-none');
+ ocrResults.classList.add('d-none');
+ extractionResults.classList.add('d-none');
+ errorResults.classList.add('d-none');
+ }
+
+ function formatSize(b) {
+ if (b === 0) return '0 B';
+ var k = 1024;
+ var s = ['B', 'KB', 'MB', 'GB'];
+ var i = Math.floor(Math.log(b) / Math.log(k));
+ return parseFloat((b / Math.pow(k, i)).toFixed(2)) + ' ' + s[i];
+ }
+});
+</script>

@@ -1,0 +1,63 @@
+<#ftl output_format="HTML">
+<#include "commons/page_header_pipeline.html">
+<div class="card">
+ <div class="card-header d-flex align-items-center justify-content-between">
+  <h5 class="card-title mb-0"><i class="ti ti-clock-play me-2"></i>#i18n{platform.agent.trigger.list.title}</h5>
+  <#if pipeline.userCanModify!false>
+  <a class="btn btn-sm btn-primary" href="jsp/site/Portal.jsp?page=agent_pipeline&view=createTrigger&id_pipeline=${pipeline.id}&client_id=${pipeline.idClient}">
+   <i class="ti ti-plus me-1"></i>#i18n{platform.agent.trigger.buttonCreate}
+  </a>
+  </#if>
+ </div>
+ <div class="card-body">
+  <#if trigger_list?has_content>
+  <div class="table-responsive">
+   <table class="table table-hover align-middle mb-0">
+    <thead>
+     <tr>
+      <th>#i18n{platform.agent.trigger.attribute.name}</th>
+      <th>#i18n{platform.agent.trigger.attribute.configuration}</th>
+      <th>#i18n{platform.agent.trigger.attribute.active}</th>
+      <th>#i18n{platform.agent.trigger.attribute.lastTriggeredAt}</th>
+      <th class="text-end"></th>
+     </tr>
+    </thead>
+    <tbody>
+     <#list trigger_list as trigger>
+     <tr>
+      <td class="fw-medium">${trigger.name!}</td>
+      <td><code class="small">${trigger.configuration!}</code></td>
+      <td>
+       <#if trigger.active>
+       <span class="badge text-bg-success">#i18n{platform.agent.trigger.attribute.active}</span>
+       <#else>
+       <span class="badge text-bg-secondary">#i18n{platform.view_pipeline_triggers.status.inactive}</span>
+       </#if>
+      </td>
+      <td class="text-muted small">${trigger.lastTriggeredAt!'-'}</td>
+      <td class="text-end">
+       <#if pipeline.userCanModify!false>
+       <a class="btn btn-sm btn-light me-1" href="jsp/site/Portal.jsp?page=agent_pipeline&view=modifyTrigger&id_trigger=${trigger.id}&id_pipeline=${pipeline.id}&client_id=${pipeline.idClient}" title="#i18n{platform.agent.xpage.action.edit}">
+        <i class="ti ti-pencil"></i>
+       </a>
+       <a class="btn btn-sm btn-light me-1" href="jsp/site/Portal.jsp?page=agent_pipeline&action=doToggleTrigger&id_trigger=${trigger.id}&id_pipeline=${pipeline.id}&client_id=${pipeline.idClient}" title="#i18n{platform.view_pipeline_triggers.action.disable}">
+        <i class="ti ti-${trigger.active?then('player-pause','player-play')}"></i>
+       </a>
+       <a class="btn btn-sm btn-light" href="jsp/site/Portal.jsp?page=agent_pipeline&action=confirmRemoveTrigger&id_trigger=${trigger.id}&id_pipeline=${pipeline.id}&client_id=${pipeline.idClient}" title="#i18n{platform.agent.xpage.action.delete}">
+        <i class="ti ti-trash"></i>
+       </a>
+       </#if>
+      </td>
+     </tr>
+     </#list>
+    </tbody>
+   </table>
+  </div>
+  <#else>
+  <div class="text-muted text-center py-4">
+   <i class="ti ti-clock-off" style="font-size:2rem"></i>
+   <p class="mt-2 mb-0">#i18n{platform.agent.trigger.list.empty}</p>
+  </div>
+  </#if>
+ </div>
+</div>

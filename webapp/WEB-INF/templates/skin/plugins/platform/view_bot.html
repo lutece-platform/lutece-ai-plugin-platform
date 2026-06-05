@@ -1,0 +1,284 @@
+<#ftl output_format="HTML">
+<#include "commons/page_header_bot.html">
+
+ <#assign observabilityUrl = "jsp/site/Portal.jsp?page=agent_observability&view=resourceObservability&resource_type=BOT&resource_id=${bot.id}&client_id=${bot.clientId}">
+ <#assign feedbacksUrl = "jsp/site/Portal.jsp?page=agent_conversation&view=manageFeedbacks&bot_id=${bot.id}">
+ <#-- ===== KPI ===== -->
+ <div class="row g-3 mb-4">
+ <div class="col-6 col-lg-3">
+ <a href="${observabilityUrl}" class="card mu-card-clickable">
+ <div class="mu-card-pointer"><i class="ti ti-arrow-up-right"></i></div>
+ <div class="card-body">
+ <div class="d-flex align-items-center justify-content-between mb-2">
+ <span class="text-secondary small text-truncate">#i18n{platform.observability.kpi.totalExecutions}</span>
+ <i class="ti ti-player-play text-secondary"></i>
+ </div>
+ <p class="h3 fw-bold mb-0 text-truncate">${(stats.executionCount)!0}</p>
+ </div>
+ </a>
+ </div>
+ <div class="col-6 col-lg-3">
+ <a href="${observabilityUrl}" class="card mu-card-clickable">
+ <div class="mu-card-pointer"><i class="ti ti-arrow-up-right"></i></div>
+ <div class="card-body">
+ <div class="d-flex align-items-center justify-content-between mb-2">
+ <span class="text-secondary small text-truncate">#i18n{platform.observability.kpi.successRate}</span>
+ <i class="ti ti-percentage text-secondary"></i>
+ </div>
+ <p class="h3 fw-bold mb-0 text-truncate">${((stats.successRate)!0)?string["0.#"]}%</p>
+ </div>
+ </a>
+ </div>
+ <div class="col-6 col-lg-3">
+ <a href="${observabilityUrl}" class="card mu-card-clickable">
+ <div class="mu-card-pointer"><i class="ti ti-arrow-up-right"></i></div>
+ <div class="card-body">
+ <div class="d-flex align-items-center justify-content-between mb-2">
+ <span class="text-secondary small text-truncate">#i18n{platform.observability.kpi.totalCost}</span>
+ <i class="ti ti-currency-euro text-secondary"></i>
+ </div>
+ <p class="h3 fw-bold mb-0 text-truncate">${((stats.totalCost)!0)?string["0.####"]}&euro;</p>
+ </div>
+ </a>
+ </div>
+ <div class="col-6 col-lg-3">
+ <a href="${feedbacksUrl}" class="card mu-card-clickable">
+ <div class="mu-card-pointer"><i class="ti ti-arrow-up-right"></i></div>
+ <div class="card-body">
+ <div class="d-flex align-items-center justify-content-between mb-2">
+ <span class="text-secondary small text-truncate">#i18n{platform.agent.xpage.manageFeedbacks.title}</span>
+ <i class="ti ti-message text-secondary"></i>
+ </div>
+ <p class="h3 fw-bold mb-0<#if (feedback_count!0) gt 0> text-warning</#if>">${feedback_count!0} <#if (feedback_count!0) gt 0><span class="fs-6 text-lowercase">#i18n{platform.agent.manage_feedbacks.status.pending}</span></#if></p>
+ </div>
+ </a>
+ </div>
+ </div>
+
+ <#-- ===== Row 1: System Prompt + Config technique ===== -->
+ <div class="row g-3 mb-3">
+ <div class="col-md-8 d-flex">
+ <div class="card flex-fill">
+ <div class="card-header"><h5 class="card-title mb-0"><i class="ti ti-message-cog me-2"></i>#i18n{platform.agent.model.entity.bot.attribute.botSystemPrompt}</h5></div>
+ <div class="card-body">
+ <#if bot.botSystemPrompt?has_content>
+ <div class="overflow-auto" style="white-space:pre-wrap;max-height:300px">${bot.botSystemPrompt}</div>
+ <#else>
+ <p class="text-secondary italic">#i18n{platform.agent.manage_datasets.noData}</p>
+ </#if>
+ </div>
+ </div>
+ </div>
+ <div class="col-md-4 d-flex">
+ <div class="card flex-fill">
+ <div class="card-header"><h5 class="card-title mb-0"><i class="ti ti-brain me-2"></i>#i18n{platform.agent.modify_bot.technical_config}</h5></div>
+ <div class="card-body d-grid gap-2">
+ <div>
+ <div class="text-secondary small">#i18n{platform.agent.model.entity.bot.attribute.llmProviderId}</div>
+ <div class="fw-semibold">
+ <#assign llmName = "-">
+ <#if llm_providers?? && bot.llmProviderId??>
+ <#list llm_providers as p>
+ <#if p.id == bot.llmProviderId><#assign llmName = p.providerName></#if>
+ </#list>
+ </#if>
+ ${llmName}
+ </div>
+ </div>
+ <div>
+ <div class="text-secondary small">#i18n{platform.agent.model.entity.bot.attribute.embedProviderId}</div>
+ <div class="fw-semibold">
+ <#assign embedName = "-">
+ <#if embed_providers?? && bot.embedProviderId??>
+ <#list embed_providers as p>
+ <#if p.id == bot.embedProviderId><#assign embedName = p.providerName></#if>
+ </#list>
+ </#if>
+ ${embedName}
+ </div>
+ </div>
+ <div>
+ <div class="text-secondary small">#i18n{platform.agent.model.entity.bot.attribute.maxTokens}</div>
+ <div class="fw-semibold">${bot.maxTokens!"-"}</div>
+ </div>
+ <div>
+ <div class="text-secondary small">#i18n{platform.agent.model.entity.bot.attribute.temperature}</div>
+ <div class="fw-semibold">${bot.temperature!"-"}</div>
+ </div>
+ <div>
+ <div class="text-secondary small">#i18n{platform.agent.model.entity.bot.attribute.rateLimitByUserByDay}</div>
+ <div class="fw-semibold"><#if (bot.rateLimitByUserByDay!0) gt 0>${bot.rateLimitByUserByDay}<#else>#i18n{platform.agent.view_bot.noLimit}</#if></div>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+
+ <#-- ===== Row Tools : Pipelines + MCP + Built-in ===== -->
+ <div class="row g-3 mb-3">
+ <div class="col-md-4 d-flex">
+ <div class="card flex-fill">
+ <div class="card-header"><h5 class="card-title mb-0"><i class="ti ti-tool me-2"></i>#i18n{platform.agent.modify_bot.pipelines}</h5></div>
+ <div class="card-body">
+ <#if pipelines?has_content>
+ <div class="d-grid gap-2">
+ <#list pipelines as pipeline>
+ <div class="d-flex align-items-start gap-2">
+ <i class="ti ti-circle-check text-primary mt-1"></i>
+ <div>
+ <div class="fw-semibold">${pipeline.name}</div>
+ <#if pipeline.description?has_content>
+ <small class="text-secondary">${pipeline.description}</small>
+ </#if>
+ </div>
+ </div>
+ </#list>
+ </div>
+ <#else>
+ <p class="text-secondary small mb-0">#i18n{platform.agent.manage_pipelines.noPipeline}</p>
+ </#if>
+ </div>
+ </div>
+ </div>
+ <div class="col-md-4 d-flex">
+ <div class="card flex-fill">
+ <div class="card-header"><h5 class="card-title mb-0"><i class="ti ti-plug me-2"></i>#i18n{platform.agent.modify_bot.mcpServers}</h5></div>
+ <div class="card-body">
+ <#if mcp_servers?has_content>
+ <div class="d-grid gap-2">
+ <#list mcp_servers as server>
+ <div class="d-flex align-items-start gap-2">
+ <i class="ti ti-circle-check text-primary mt-1"></i>
+ <div>
+ <div class="fw-semibold">${server.name}<#if !server.enabled> <span class="badge bg-secondary ms-1">#i18n{platform.agent.manage_mcp_servers.statusDisabled}</span></#if></div>
+ <small class="text-secondary">${server.transportType} — ${server.url}</small>
+ </div>
+ </div>
+ </#list>
+ </div>
+ <#else>
+ <p class="text-secondary small mb-0">#i18n{platform.agent.manage_mcp_servers.noServer}</p>
+ </#if>
+ </div>
+ </div>
+ </div>
+ <div class="col-md-4 d-flex">
+ <div class="card flex-fill">
+ <div class="card-header"><h5 class="card-title mb-0"><i class="ti ti-cpu me-2"></i>#i18n{platform.agent.modify_bot.builtin_tools}</h5></div>
+ <div class="card-body">
+ <#if bot.enableBuiltinTools!false>
+ <p class="text-secondary small mb-0">#i18n{platform.agent.helper.builtinTools}</p>
+ <#else>
+ <p class="text-secondary small mb-0">#i18n{platform.agent.view_bot.builtinTools.disabled}</p>
+ </#if>
+ </div>
+ </div>
+ </div>
+ </div>
+
+ <#if datasets_local?has_content>
+ <#-- ===== Row 2: Semantic Search + Aggregation + Query Enhancement ===== -->
+ <div class="row g-3 mb-3">
+ <div class="col-md-4 d-flex">
+ <div class="card flex-fill">
+ <div class="card-header"><h5 class="card-title mb-0"><i class="ti ti-search me-2"></i>#i18n{platform.agent.create_bot.semantic_search}</h5></div>
+ <div class="card-body d-grid gap-2">
+ <div class="text-secondary small">#i18n{platform.agent.model.entity.bot.attribute.semanticSearchMaxResults} : <span class="fw-semibold">${bot.semanticSearchMaxResults!15}</span></div>
+ <div class="text-secondary small">#i18n{platform.agent.model.entity.bot.attribute.semanticSearchMinScore} : <span class="fw-semibold">${bot.semanticSearchMinScore!0.7}</span></div>
+ </div>
+ </div>
+ </div>
+ <div class="col-md-4 d-flex">
+ <div class="card flex-fill">
+ <div class="card-header"><h5 class="card-title mb-0"><i class="ti ti-layers-intersect me-2"></i>#i18n{platform.agent.create_bot.content_aggregation}</h5></div>
+ <div class="card-body">
+ <#if bot.enableContentAggregation!false>
+ <span class="badge text-bg-primary">#i18n{portal.util.labelEnabled}</span>
+ <div class="text-secondary small">#i18n{platform.agent.model.entity.bot.attribute.aggregationMaxResults} : ${bot.aggregationMaxResults!15}</div>
+ <#else>
+ <span class="badge text-bg-secondary">#i18n{portal.util.labelDisabled}</span>
+ <p class="text-secondary small">#i18n{platform.agent.view_bot.aggregation.disabled}</p>
+ </#if>
+ </div>
+ </div>
+ </div>
+ <div class="col-md-4 d-flex">
+ <div class="card flex-fill">
+ <div class="card-header"><h5 class="card-title mb-0"><i class="ti ti-wand me-2"></i>#i18n{platform.agent.create_bot.query_enhancement}</h5></div>
+ <div class="card-body">
+ <#assign qeMode = bot.queryEnhancementMode!"NONE">
+ <#if qeMode != "NONE">
+ <#assign showExpansion = qeMode == "EXPANSION_ONLY" || qeMode == "EXPANSION_THEN_HYDE" || qeMode == "EXPANSION_PLUS_HYDE_GLOBAL">
+ <#assign showHyde = qeMode == "HYDE_ONLY" || qeMode == "EXPANSION_THEN_HYDE" || qeMode == "EXPANSION_PLUS_HYDE_GLOBAL">
+ <span class="badge text-bg-primary">#i18n{portal.util.labelEnabled}</span>
+ <div class="text-secondary small mt-1">#i18n{platform.agent.model.entity.bot.attribute.queryEnhancementMode} : <span class="fw-semibold">#i18n{platform.agent.queryEnhancementMode.${qeMode?lower_case}}</span></div>
+ <#if showExpansion>
+ <div class="text-secondary small">#i18n{platform.agent.model.entity.bot.attribute.queryExpansionVariants} : <span class="fw-semibold">${bot.queryExpansionVariants!3}</span></div>
+ </#if>
+ <#if showHyde>
+ <div class="text-secondary small">#i18n{platform.agent.model.entity.bot.attribute.hydeMaxTokens} : <span class="fw-semibold">${bot.hydeMaxTokens!500}</span></div>
+ </#if>
+ <#else>
+ <span class="badge text-bg-secondary">#i18n{portal.util.labelDisabled}</span>
+ <p class="text-secondary small">#i18n{platform.agent.view_bot.queryEnhancement.disabled}</p>
+ </#if>
+ </div>
+ </div>
+ </div>
+ </div>
+ </#if>
+
+ <#-- ===== Row 3: Welcome Message + Datasets ===== -->
+ <div class="row g-3">
+ <#if bot.welcomeMessage?has_content>
+ <div class="col-12">
+ <div class="card">
+ <div class="card-header"><h5 class="card-title mb-0"><i class="ti ti-message me-2"></i>#i18n{platform.agent.model.entity.bot.attribute.welcomeMessage}</h5></div>
+ <div class="card-body">
+ <div style="white-space:pre-wrap">${bot.welcomeMessage}</div>
+ </div>
+ </div>
+ </div>
+ </#if>
+ <#if datasets_local?has_content>
+ <div class="col-12">
+ <div class="card">
+ <div class="card-header"><h5 class="card-title mb-0"><i class="ti ti-database me-2"></i>#i18n{platform.agent.modify_bot.datasets}</h5></div>
+ <div class="card-body">
+ <div class="d-grid gap-1">
+ <#list datasets_local as dataset>
+ <a href="jsp/site/Portal.jsp?page=agent_dataset&view=viewDataset&dataset_id=${dataset.id}" class="d-flex align-items-center gap-3 p-3 rounded text-decoration-none">
+ <div class="flex-grow-1">
+ <div class="fw-semibold">${dataset.datasetName}</div>
+ <#if dataset.datasetDescription?has_content>
+ <div class="text-secondary small">${dataset.datasetDescription}</div>
+ </#if>
+ </div>
+ <i class="ti ti-chevron-right"></i>
+ </a>
+ </#list>
+ </div>
+ </div>
+ </div>
+ </div>
+ </#if>
+ </div>
+
+<script type="module">
+import { createLuteceChat } from './js/lutecechat/dist/lutece-chat-bundle.js';
+import ZeroMd, { STYLES } from './js/zeromd.js'
+
+customElements.define('zero-md', class extends ZeroMd {
+ async load() {
+ await super.load()
+ this.template = STYLES.preset('light') + `<style>.p-4 { padding:2rem; }</style>`
+ }
+});
+
+createLuteceChat({
+ botId: '${bot.id}',
+ showBotList: false,
+ endpoints: { base: 'rest/platform/agent/admin' },
+ sidebar: { open: true }
+});
+</script>

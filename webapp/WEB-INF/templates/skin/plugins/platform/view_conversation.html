@@ -1,0 +1,98 @@
+<#ftl output_format="HTML">
+<#if bot??>
+<#include "commons/page_header_bot.html">
+</#if>
+
+<div class="d-flex align-items-center mb-4">
+  <h2 class="h4 fw-bold">#i18n{platform.agent.xpage.viewConversation.title}</h2>
+  <#if conversation_history??>
+    <span class="text-secondary small ms-3">${conversation_history.conversationUuid!}</span>
+  </#if>
+</div>
+
+<#if conversation_history?? && conversation_history.messages?? && (conversation_history.messages?size > 0)>
+<div class="d-flex flex-column gap-4">
+  <#list conversation_history.messages as message>
+    <#assign messageContent = message.message>
+    <#assign ragContent = ''>
+    <#assign cleanContent = messageContent>
+    <#assign hasRagContext = false>
+
+    <#if messageContent?contains('<rag_context>') && messageContent?contains('</rag_context>')>
+      <#assign hasRagContext = true>
+      <#assign ragStart = messageContent?index_of('<rag_context>')>
+      <#assign ragEnd = messageContent?index_of('</rag_context>') + 14>
+      <#assign ragContentStart = ragStart + 13>
+      <#assign ragContentEnd = messageContent?index_of('</rag_context>')>
+      <#if ragContentEnd != -1>
+        <#assign ragContent = messageContent?substring(ragContentStart, ragContentEnd)?trim>
+        <#assign ragBlock = messageContent?substring(ragStart, ragEnd)>
+        <#assign cleanContent = messageContent?replace(ragBlock, '')?trim>
+      </#if>
+    </#if>
+
+    <#assign isUser = (message.role == 'user')>
+
+    <#if !hasRagContext || (cleanContent?has_content && cleanContent?trim?length > 0)>
+    <#if isUser>
+    <div class="d-flex flex-column align-items-end">
+      <div class="card bg-secondary text-white" style="max-width:80%">
+        <div class="card-body p-3">${cleanContent}</div>
+      </div>
+      <div class="text-secondary small mt-1">
+        #i18n{platform.agent.view_conversation.user}<#if message.createdAt??> &middot; ${message.createdAt?datetime?string("HH:mm")}</#if>
+      </div>
+    </div>
+    <#else>
+    <div>
+      <div class="card mu-chat-content w-100">
+        <div class="card-body p-3 mu-chat-md">${cleanContent}</div>
+        <#if message.feedback??>
+        <div class="card-footer d-flex align-items-center gap-2">
+          <#if message.feedback.positive>
+            <i class="ti ti-thumb-up text-success"></i>
+            <span class="text-success small">#i18n{platform.agent.view_conversation.feedback.positive}</span>
+          <#else>
+            <i class="ti ti-thumb-down text-danger"></i>
+            <span class="text-danger small">#i18n{platform.agent.view_conversation.feedback.negative}</span>
+          </#if>
+          <#if message.feedback.comment?? && message.feedback.comment?length gt 0>
+            <span class="text-secondary small">&middot; ${message.feedback.comment}</span>
+          </#if>
+        </div>
+        </#if>
+      </div>
+      <div class="text-secondary small mt-1">
+        ${bot.botName!'Assistant'}<#if message.createdAt??> &middot; ${message.createdAt?datetime?string("HH:mm")}</#if>
+      </div>
+    </div>
+    </#if>
+    </#if>
+
+    <#if ragContent?has_content>
+    <div>
+      <div class="card mu-chat-content w-100">
+        <div class="card-body p-3">
+          <details>
+            <summary class="fw-semibold" role="button">RAG Context</summary>
+            <div class="mt-2" style="white-space:pre-wrap">${ragContent}</div>
+          </details>
+        </div>
+      </div>
+    </div>
+    </#if>
+  </#list>
+</div>
+<#else>
+<div class="text-center py-4 text-secondary">
+  <i class="ti ti-message"></i>
+  <p>#i18n{platform.agent.view_conversation.noMessages}</p>
+</div>
+</#if>
+
+<script src="js/marked.min.js"></script>
+<script>
+document.querySelectorAll('.mu-chat-md').forEach(function(el) {
+  el.innerHTML = marked.parse(el.textContent);
+});
+</script>

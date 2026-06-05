@@ -1,0 +1,113 @@
+<#ftl output_format="HTML">
+<#include "commons/page_header_dataset.html">
+
+ <#-- Header -->
+ <div class="d-flex flex-wrap align-items-center gap-3 mb-4">
+ <div>
+ <h2 class="h4 fw-bold">${document.name!}</h2>
+ <p class="text-secondary mt-1">#i18n{platform.agent.view_segments.pageTitle}</p>
+ </div>
+ </div>
+
+ <#if segments_list?? && segments_list?size gt 0>
+ <#assign sortedSegments = [] />
+ <#list segments_list as segment>
+ <#assign segmentIndex = (segment.metadata.segment_index)!999999 />
+ <#assign sortedSegments = sortedSegments + [{"segment": segment, "index": segmentIndex?number}] />
+ </#list>
+ <#assign sortedSegments = sortedSegments?sort_by("index") />
+
+ <div class="d-grid gap-2">
+ <#list sortedSegments as sortedItem>
+ <#assign segment = sortedItem.segment />
+ <div class="card">
+ <div class="card-body">
+ <div class="d-flex align-items-center gap-3">
+ <span class="d-flex align-items-center justify-content-center rounded-circle bg-body-secondary flex-shrink-0" style="width:40px;height:40px">
+ <span class="fw-bold small">${(segment.metadata.segment_index)!'?'}</span>
+ </span>
+ <div class="flex-grow-1">
+ <div class="fw-semibold">
+ ${segment.text?substring(0, (segment.text?length < 120)?then(segment.text?length, 120))}
+ <#if segment.text?length gt 120><span class="text-secondary">...</span></#if>
+ </div>
+ <div class="d-flex align-items-center gap-2 mt-1">
+ <span class="text-secondary small">${segment.text?length} #i18n{platform.agent.view_segments.modal.characters}</span>
+ </div>
+ </div>
+ <div class="d-flex align-items-center gap-2">
+ <button type="button" class="btn btn-light" onclick="new bootstrap.Modal(document.getElementById('segmentDialog${sortedItem?index}')).show()">
+ <i class="ti ti-eye"></i>
+ </button>
+ </div>
+ </div>
+ </div>
+ </div>
+ </#list>
+ </div>
+ <#else>
+ <div class="card w-100">
+  <div class="card-body d-flex flex-column align-items-center justify-content-center py-5 text-center">
+   <i class="ti ti-puzzle text-secondary mb-3" style="font-size: 3rem;"></i>
+   <p class="fw-semibold mb-1">#i18n{platform.agent.view_segments.noSegments}</p>
+   <p class="small text-secondary mb-0">#i18n{platform.agent.view_segments.noSegmentsDescription}</p>
+  </div>
+ </div>
+ </#if>
+
+<#-- Segment detail dialogs -->
+<#if segments_list?? && segments_list?size gt 0>
+ <#assign sortedSegments = [] />
+ <#list segments_list as segment>
+ <#assign segmentIndex = (segment.metadata.segment_index)!999999 />
+ <#assign sortedSegments = sortedSegments + [{"segment": segment, "index": segmentIndex?number}] />
+ </#list>
+ <#assign sortedSegments = sortedSegments?sort_by("index") />
+
+ <#list sortedSegments as sortedItem>
+ <#assign segment = sortedItem.segment />
+ <div class="modal fade" id="segmentDialog${sortedItem?index}" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable"><div class="modal-content">
+ <div class="modal-header">
+ <h1 class="modal-title fs-3">#i18n{platform.agent.view_segments.modal.segmentTitle} ${(segment.metadata.segment_index)!'?'}</h1>
+ <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+ </div>
+ <div class="modal-body d-grid gap-3">
+ <div>
+ <h5 class="fw-bold mb-2">#i18n{platform.agent.view_segments.modal.fullText}</h5>
+ <div class="border rounded p-3" style="white-space:pre-wrap">${segment.text!}</div>
+ </div>
+
+ <div>
+ <h5 class="fw-bold mb-2">#i18n{platform.agent.view_segments.modal.metadata}</h5>
+ <#if segment.metadata??>
+ <div class="table-responsive">
+ <table class="table table-hover align-middle">
+ <thead><tr><th>#i18n{platform.agent.view_segments.modal.key}</th><th>#i18n{platform.observability.pipeline.column.value}</th></tr></thead>
+ <tbody>
+ <#list segment.metadata?keys as key>
+ <tr><td class="fw-semibold">${key}</td><td>${segment.metadata[key]!''}</td></tr>
+ </#list>
+ </tbody>
+ </table>
+ </div>
+ </#if>
+ </div>
+
+ <div>
+ <h5 class="fw-bold mb-2">#i18n{platform.agent.view_segments.modal.technicalInfo}</h5>
+ <div class="table-responsive">
+ <table class="table table-hover align-middle">
+ <tbody>
+ <tr><td>#i18n{platform.agent.view_segments.modal.esId}</td><td><code>${segment.id!''}</code></td></tr>
+ <tr><td>#i18n{platform.agent.view_segments.modal.textLength}</td><td>${segment.text?length} #i18n{platform.agent.view_segments.modal.characters}</td></tr>
+ </tbody>
+ </table>
+ </div>
+ </div>
+ </div>
+ <div class="modal-footer">
+ <button type="button" class="btn btn-light" data-bs-dismiss="modal">#i18n{portal.util.labelClose}</button>
+ </div>
+ </div></div></div>
+ </#list>
+</#if>

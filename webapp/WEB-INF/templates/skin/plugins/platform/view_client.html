@@ -1,0 +1,216 @@
+<#ftl output_format="HTML">
+<#assign globalTotalCost = 0>
+<#assign globalExecutionCount = 0>
+<#assign globalWeightedSuccessSum = 0>
+<#assign hasResourcesInAnyType = false>
+<#if resource_type_list?? && resource_type_list?has_content>
+    <#list resource_type_list as resource_type>
+        <#if resource_item_list[resource_type.resourceType]?? && resource_item_list[resource_type.resourceType]?has_content>
+            <#assign hasResourcesInAnyType = true>
+            <#list resource_item_list[resource_type.resourceType] as item>
+                <#assign globalTotalCost = globalTotalCost + (item.totalCost!0)>
+                <#assign globalExecutionCount = globalExecutionCount + (item.executionCount!0)>
+                <#assign globalWeightedSuccessSum = globalWeightedSuccessSum + ((item.successRate!0) * (item.executionCount!0))>
+            </#list>
+        </#if>
+    </#list>
+</#if>
+<#assign globalSuccessRate = (globalExecutionCount > 0)?then(globalWeightedSuccessSum / globalExecutionCount, 0)>
+
+<#-- Header -->
+<div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4">
+    <div>
+        <a href="jsp/site/Portal.jsp?page=platform&view=listClients" class="small text-secondary text-decoration-none d-flex align-items-center gap-1 mb-2">
+            <i class="ti ti-arrow-left"></i>#i18n{platform.xpage.action.back}
+        </a>
+        <h1 class="fw-bold mb-1">${client.name!''}</h1>
+        <#if (client.description!"")?has_content>
+            <p class="text-secondary mb-0">${client.description}</p>
+        </#if>
+    </div>
+    <div class="d-flex flex-wrap gap-2 mt-3 mt-md-0">
+        <#if client.userCanModify && resource_type_list?? && resource_type_list?has_content>
+            <div class="dropdown">
+                <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="ti ti-plus me-1"></i>#i18n{platform.view_resource_type.button.create}
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <#list resource_type_list as rt>
+                        <li><a class="dropdown-item" href="${rt.getCreateUrl(client.id?string)}"><i class="ti ti-${rt.icon!} me-1"></i>#i18n{${rt.nameKey!}}</a></li>
+                    </#list>
+                </ul>
+            </div>
+        </#if>
+        <#if client.userCanViewObservability>
+            <a class="btn btn-light" href="jsp/site/Portal.jsp?page=platform&view=clientObservability&id=${client.id}">
+                <i class="ti ti-chart-bar me-1"></i>#i18n{platform.xpage.observability.title}
+            </a>
+        </#if>
+        <#if client.userCanModify>
+            <a class="btn btn-light" href="jsp/site/Portal.jsp?page=platform&view=modifyClient&id=${client.id}">
+                <i class="ti ti-pencil me-1"></i>#i18n{portal.util.labelModify}
+            </a>
+        </#if>
+        <#if client.userCanDelete>
+            <a class="btn btn-light" href="jsp/site/Portal.jsp?page=platform&action=confirmRemoveClient&id=${client.id}">
+                <i class="ti ti-trash me-1"></i>#i18n{portal.util.labelDelete}
+            </a>
+        </#if>
+    </div>
+</div>
+
+<#assign observabilityUrl = "jsp/site/Portal.jsp?page=platform&view=clientObservability&id=${client.id}">
+<#assign modifyUrl = "jsp/site/Portal.jsp?page=platform&view=modifyClient&id=${client.id}">
+
+<#-- Stats Bento -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <a href="${observabilityUrl}" class="card mu-card-clickable">
+            <div class="mu-card-pointer"><i class="ti ti-arrow-up-right"></i></div>
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-secondary small text-truncate">#i18n{platform.observability.kpi.totalExecutions}</span>
+                    <i class="ti ti-player-play text-secondary"></i>
+                </div>
+                <p class="h3 fw-bold mb-0 text-truncate">${globalExecutionCount!0}</p>
+            </div>
+        </a>
+    </div>
+    <div class="col-6 col-lg-3">
+        <a href="${observabilityUrl}" class="card mu-card-clickable">
+            <div class="mu-card-pointer"><i class="ti ti-arrow-up-right"></i></div>
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-secondary small text-truncate">#i18n{platform.observability.kpi.successRate}</span>
+                    <i class="ti ti-circle-check text-secondary"></i>
+                </div>
+                <p class="h3 fw-bold mb-0 text-truncate">${globalSuccessRate?string["0.#"]}%</p>
+            </div>
+        </a>
+    </div>
+    <div class="col-6 col-lg-3">
+        <a href="${observabilityUrl}" class="card mu-card-clickable">
+            <div class="mu-card-pointer"><i class="ti ti-arrow-up-right"></i></div>
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-secondary small text-truncate">#i18n{platform.observability.kpi.totalCost}</span>
+                    <i class="ti ti-currency-euro text-secondary"></i>
+                </div>
+                <p class="h3 fw-bold mb-0 text-truncate">${globalTotalCost?string['0.##']}&euro;</p>
+            </div>
+        </a>
+    </div>
+    <div class="col-6 col-lg-3">
+        <a href="${modifyUrl}" class="card mu-card-clickable">
+            <div class="mu-card-pointer"><i class="ti ti-arrow-up-right"></i></div>
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-secondary small text-truncate">#i18n{platform.observability.table.status}</span>
+                    <i class="ti ti-circle-check text-secondary"></i>
+                </div>
+                <p class="h3 fw-bold mb-0 text-truncate">
+                    <#if client.active>
+                        <span class="badge text-bg-success">#i18n{portal.util.labelEnabled}</span>
+                    <#else>
+                        <span class="badge text-bg-danger">#i18n{portal.util.labelDisabled}</span>
+                    </#if>
+                </p>
+            </div>
+        </a>
+    </div>
+</div>
+
+<#include "commons/messages.html" />
+
+<#if hasResourcesInAnyType>
+    <#-- Filter pills -->
+    <ul class="nav nav-pills mb-4" id="resourceTabs">
+        <li class="nav-item"><button class="nav-link active" data-filter="all">#i18n{platform.xpage.viewClient.filterAll}</button></li>
+        <#list resource_type_list as resource_type>
+            <#if resource_item_list[resource_type.resourceType]?? && resource_item_list[resource_type.resourceType]?has_content>
+                <li class="nav-item"><button class="nav-link" data-filter="${resource_type.resourceType}"><i class="ti ti-${resource_type.icon!} me-1"></i>#i18n{${resource_type.nameKey!}}</button></li>
+            </#if>
+        </#list>
+    </ul>
+
+    <#-- Resource cards -->
+    <div class="row g-3" id="resourceGrid">
+        <#list resource_type_list as resource_type>
+            <#if resource_item_list[resource_type.resourceType]?? && resource_item_list[resource_type.resourceType]?has_content>
+                <#list resource_item_list[resource_type.resourceType] as item>
+                    <#if item.userCanView!true>
+                    <#assign hasSubscription = false>
+                    <#assign subscription = {}>
+                    <#if subscriptions_by_type_and_id?? && subscriptions_by_type_and_id[resource_type.resourceType]?? && subscriptions_by_type_and_id[resource_type.resourceType][item.id?string]??>
+                        <#assign subscription = subscriptions_by_type_and_id[resource_type.resourceType][item.id?string]>
+                        <#assign hasSubscription = true>
+                    </#if>
+                    <div class="col-sm-6 col-lg-4 col-xl-3" data-category="${resource_type.resourceType}">
+                        <a href="${item.viewUrl!}" class="card mu-card-clickable h-100 text-decoration-none text-body">
+                            <div class="mu-card-pointer"><i class="ti ti-arrow-up-right"></i></div>
+                            <div class="card-body text-center d-flex flex-column">
+                                <#-- Avatar / Icon -->
+                                <div class="text-center mb-2">
+                                    <#if (item.icon!"")?has_content && item.icon?starts_with("data:")>
+                                        <img src="${item.icon}" alt="" class="rounded-circle mx-auto" style="width: 48px; height: 48px; object-fit: cover;" />
+                                    <#else>
+                                        <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-body-secondary mx-auto" style="width: 48px; height: 48px;">
+                                            <i class="ti ti-${resource_type.icon!'package'}"></i>
+                                        </span>
+                                    </#if>
+                                </div>
+                                <h5 class="fw-bold text-break mb-2">${item.name!}</h5>
+                                <#if (item.description!"")?has_content>
+                                    <p class="text-secondary small mb-2">${item.description?truncate(80)}</p>
+                                </#if>
+                                <div class="mt-auto d-flex flex-wrap justify-content-center gap-2">
+                                    <#if hasSubscription && subscription.status == "ACTIVE">
+                                        <span class="badge text-bg-success">#i18n{platform.manage_resources.status.published}</span>
+                                    <#else>
+                                        <span class="badge text-bg-secondary">#i18n{platform.manage_resources.status.unpublished}</span>
+                                    </#if>
+                                    <span class="badge text-bg-secondary">
+                                        <i class="ti ti-player-play me-1"></i>${item.executionCount!0}
+                                    </span>
+                                    <#if (item.executionCount!0) gt 0>
+                                        <#if (item.successRate!0) gte 80>
+                                            <span class="badge text-bg-success"><i class="ti ti-percentage me-1"></i>${(item.successRate!0)?string["0.#"]}%</span>
+                                        <#elseif (item.successRate!0) gte 50>
+                                            <span class="badge text-bg-warning"><i class="ti ti-percentage me-1"></i>${(item.successRate!0)?string["0.#"]}%</span>
+                                        <#else>
+                                            <span class="badge text-bg-danger"><i class="ti ti-percentage me-1"></i>${(item.successRate!0)?string["0.#"]}%</span>
+                                        </#if>
+                                    </#if>
+                                    <span class="badge text-bg-secondary">
+                                        <i class="ti ti-currency-euro me-1"></i>${(item.totalCost!0)?string["0.####"]} &euro;
+                                    </span>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                    </#if>
+                </#list>
+            </#if>
+        </#list>
+    </div>
+<#else>
+    <div class="card w-100">
+        <div class="card-body d-flex flex-column align-items-center justify-content-center py-5 text-center">
+            <i class="ti ti-package text-secondary mb-3" style="font-size: 3rem;"></i>
+            <p class="text-secondary mb-0">#i18n{platform.manage_resources.noItem}</p>
+        </div>
+    </div>
+</#if>
+
+<script>
+document.getElementById('resourceTabs').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-filter]');
+    if (!btn) return;
+    const filter = btn.dataset.filter;
+    document.querySelectorAll('#resourceTabs .nav-link').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('#resourceGrid [data-category]').forEach(card => {
+        card.style.display = (filter === 'all' || card.dataset.category === filter) ? '' : 'none';
+    });
+});
+</script>

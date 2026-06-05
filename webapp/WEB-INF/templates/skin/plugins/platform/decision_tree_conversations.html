@@ -1,0 +1,251 @@
+<#ftl output_format="HTML">
+<#include "commons/page_header_decision_tree.html">
+
+<#-- KPI cards -->
+<#if paginator?? && (paginator.itemsCount > 0)>
+<div class="row g-3 mb-4">
+ <div class="col-6 col-lg-3">
+  <div class="card">
+   <div class="card-body">
+    <div class="d-flex align-items-center justify-content-between mb-2">
+     <span class="text-secondary small text-truncate">#i18n{platform.agent.decision_tree_conversations.kpi.total}</span>
+     <i class="ti ti-messages text-secondary"></i>
+    </div>
+    <p class="h3 fw-bold mb-0 text-truncate">${paginator.itemsCount}</p>
+   </div>
+  </div>
+ </div>
+ <div class="col-6 col-lg-3">
+  <div class="card">
+   <div class="card-body">
+    <div class="d-flex align-items-center justify-content-between mb-2">
+     <span class="text-secondary small text-truncate">#i18n{platform.agent.decision_tree_conversations.kpi.avgSteps}</span>
+     <i class="ti ti-route text-secondary"></i>
+    </div>
+    <p class="h3 fw-bold mb-0 text-truncate">${avg_steps?string["0.#"]}</p>
+   </div>
+  </div>
+ </div>
+ <div class="col-6 col-lg-3">
+  <div class="card">
+   <div class="card-body">
+    <div class="d-flex align-items-center justify-content-between mb-2">
+     <span class="text-secondary small text-truncate">#i18n{platform.agent.decision_tree_conversations.kpi.averageDuration}</span>
+     <i class="ti ti-hourglass text-secondary"></i>
+    </div>
+    <#assign mins = (average_duration_seconds / 60)?int>
+    <#assign secs = (average_duration_seconds % 60)?int>
+    <p class="h3 fw-bold mb-0 text-truncate"><#if mins gt 0>${mins}m </#if>${secs}s</p>
+   </div>
+  </div>
+ </div>
+ <div class="col-6 col-lg-3">
+  <div class="card">
+   <div class="card-body">
+    <div class="d-flex align-items-center justify-content-between mb-2">
+     <span class="text-secondary small text-truncate">#i18n{platform.agent.decision_tree_conversations.filter.period}</span>
+     <i class="ti ti-calendar text-secondary"></i>
+    </div>
+    <div class="dropdown">
+     <button class="btn btn-light btn-sm dropdown-toggle w-100 text-start" type="button" data-bs-toggle="dropdown">
+      <span id="filter_range_label"><#if (date_from!"")?has_content>${date_from} — ${date_to!}<#else>#i18n{platform.agent.decision_tree_conversations.filter.all}</#if></span>
+     </button>
+     <ul class="dropdown-menu">
+   <li><a class="dropdown-item" href="#" data-range="7">#i18n{platform.agent.decision_tree_conversations.filter.last7days}</a></li>
+   <li><a class="dropdown-item" href="#" data-range="30">#i18n{platform.agent.decision_tree_conversations.filter.last30days}</a></li>
+   <li><a class="dropdown-item" href="#" data-range="90">#i18n{platform.agent.decision_tree_conversations.filter.last3months}</a></li>
+   <li><hr class="dropdown-divider"></li>
+   <li><a class="dropdown-item" href="#" data-range="all">#i18n{platform.agent.decision_tree_conversations.filter.all}</a></li>
+   <li><hr class="dropdown-divider"></li>
+   <li>
+    <div class="px-3 py-2">
+     <div class="small fw-semibold mb-2">#i18n{platform.agent.decision_tree_conversations.filter.custom}</div>
+     <div class="d-flex align-items-center gap-2">
+      <input type="date" class="form-control form-control-sm" id="filter_date_from" value="${date_from!}">
+      <span class="text-secondary small text-truncate">—</span>
+      <input type="date" class="form-control form-control-sm" id="filter_date_to" value="${date_to!}">
+      <button type="button" class="btn btn-primary btn-sm flex-shrink-0" id="btn_custom_filter">
+       <i class="ti ti-check"></i>
+      </button>
+     </div>
+    </div>
+   </li>
+  </ul>
+    </div>
+   </div>
+  </div>
+ </div>
+</div>
+</#if>
+
+<script>
+( function()
+{
+    const baseUrl = 'jsp/site/Portal.jsp?page=agent_decisiontree&view=decisionTreeConversations&tree_id=${decision_tree.id}&client_id=${client_id!}';
+    const fmt = function( d ) { return d.toISOString().slice( 0, 10 ); };
+
+    document.querySelectorAll( '[data-range]' ).forEach( function( el )
+    {
+        el.addEventListener( 'click', function( e )
+        {
+            e.preventDefault();
+            const range = this.dataset.range;
+            if ( range === 'all' )
+            {
+                window.location.href = baseUrl;
+                return;
+            }
+            const to = new Date();
+            const from = new Date();
+            from.setDate( from.getDate() - parseInt( range ) );
+            window.location.href = baseUrl + '&date_from=' + fmt( from ) + '&date_to=' + fmt( to );
+        });
+    });
+
+    document.getElementById( 'btn_custom_filter' ).addEventListener( 'click', function()
+    {
+        const from = document.getElementById( 'filter_date_from' ).value;
+        const to = document.getElementById( 'filter_date_to' ).value;
+        if ( !from && !to ) return;
+        let url = baseUrl;
+        if ( from ) url += '&date_from=' + from;
+        if ( to ) url += '&date_to=' + to;
+        window.location.href = url;
+    });
+})();
+</script>
+
+<div class="card mb-4">
+   <div class="card-header">
+    <h5 class="card-title mb-0"><i class="ti ti-binary-tree me-2"></i>#i18n{platform.agent.decision_tree_conversations.nodeStats.title}</h5>
+   </div>
+   <div class="card-body">
+    <#if decision_nodes?? && decision_nodes?has_content && root_nodes?has_content>
+     <#macro nodeRowStats node expanded=true collapseId="">
+     <#local hasChildren = node.transitions?? && node.transitions?has_content>
+     <#local visitCount = (node_visit_counts[node.id?string]!0)>
+     <div class="py-2">
+      <div class="d-flex align-items-center gap-2">
+       <#if hasChildren>
+       <a class="text-secondary text-decoration-none<#if !expanded> collapsed</#if>" data-bs-toggle="collapse" href="#${collapseId}" role="button" aria-expanded="${expanded?string('true','false')}">
+        <i class="ti ti-chevron-<#if expanded>down<#else>right</#if>"></i>
+       </a>
+       <#else>
+       <span class="d-inline-block" style="width: 20px;"></span>
+       </#if>
+       <#if !hasChildren><span class="badge bg-danger">#i18n{platform.decision_tree_conversations.node.end}</span></#if>
+       <#if hasChildren>
+       <a class="fw-medium text-decoration-none text-body" role="button" data-bs-toggle="collapse" href="#${collapseId}">${node.nodeTitle!}</a>
+       <#else>
+       <span class="fw-medium">${node.nodeTitle!}</span>
+       </#if>
+       <#if visitCount gt 0>
+       <span class="badge bg-primary rounded-pill">${visitCount}x</span>
+       <#else>
+       <span class="badge bg-light text-secondary rounded-pill">0x</span>
+       </#if>
+      </div>
+     </div>
+     </#macro>
+
+     <#macro renderNodeStats nodeId nodeMap visited depth=0>
+     <#if nodeMap[nodeId]?? && !visited?seq_contains(nodeId)>
+      <#local node = nodeMap[nodeId]>
+      <#local expanded = (depth < 2)>
+      <#global _suid = (_suid!0) + 1>
+      <#local collapseId = "stats_${node.id}_${_suid}">
+      <@nodeRowStats node=node expanded=expanded collapseId=collapseId />
+      <#if node.transitions?? && node.transitions?has_content>
+      <div class="collapse<#if expanded> show</#if> ms-4 border-start" id="${collapseId}">
+       <#list node.transitions as transition>
+       <div class="ps-3">
+        <div class="py-1 d-flex align-items-center gap-1 small text-secondary overflow-hidden">
+         <i class="ti ti-corner-down-right flex-shrink-0"></i>
+         <#if transition.label?? && transition.label?has_content>
+         <span class="badge bg-secondary text-truncate">${transition.label}</span>
+         <#else>
+         <span class="fst-italic">#i18n{platform.agent.decision_node.autoTransition.short}</span>
+         </#if>
+        </div>
+        <div class="ms-3 ps-3 border-start">
+         <@renderNodeStats nodeId=transition.targetNodeId?string nodeMap=nodeMap visited=visited + [nodeId] depth=depth+1 />
+        </div>
+       </div>
+       </#list>
+      </div>
+      </#if>
+     <#elseif nodeMap[nodeId]?? && visited?seq_contains(nodeId)>
+      <div class="py-1 d-flex align-items-center gap-1 small text-secondary fst-italic">
+       <i class="ti ti-refresh"></i> ${nodeMap[nodeId].nodeTitle!} <span class="badge bg-light text-dark border">#i18n{platform.agent.decision_tree.cycle}</span>
+      </div>
+     </#if>
+     </#macro>
+     <@renderNodeStats nodeId=root_nodes[0].id?string nodeMap=node_map visited=[] />
+    <#else>
+     <p class="text-secondary small mb-0">#i18n{platform.agent.decision_tree.noNodes}</p>
+    </#if>
+   </div>
+</div>
+
+<#if !conversations?has_content>
+<div class="card">
+ <div class="card-body text-center py-5 text-secondary">
+  <i class="ti ti-messages fs-1 d-block mb-2"></i>
+  <p class="fw-semibold mb-1">#i18n{platform.agent.decision_tree_conversations.noData.title}</p>
+  <p class="small mb-0">#i18n{platform.agent.decision_tree_conversations.noData.description}</p>
+ </div>
+</div>
+<#else>
+<div class="table-responsive">
+  <table class="table table-hover align-middle mb-0">
+   <thead>
+    <tr>
+     <th>#i18n{platform.agent.decision_tree_conversations.column.conversationId}</th>
+     <th>#i18n{platform.agent.decision_tree_conversations.column.startTime}</th>
+     <th>#i18n{platform.agent.decision_tree_conversations.column.lastStepTime}</th>
+     <th>#i18n{platform.agent.decision_tree_conversations.column.stepCount}</th>
+     <th></th>
+    </tr>
+   </thead>
+   <tbody>
+    <#list conversations as conv>
+    <tr>
+     <td><span class="font-monospace small text-secondary">${conv.conversationId?substring(0, 8)}...</span></td>
+     <td class="small">${conv.startTime?string("dd/MM/yyyy HH:mm")}</td>
+     <td class="small">${conv.lastStepTime?string("dd/MM/yyyy HH:mm")}</td>
+     <td>${(step_counts[conv.conversationId])!0}</td>
+     <td class="text-end">
+      <a href="jsp/site/Portal.jsp?page=agent_decisiontree&view=decisionTreeConversationDetail&conversation_id=${conv.conversationId}&client_id=${client_id!}" class="btn btn-light btn-sm">
+       <i class="ti ti-eye me-1"></i>#i18n{platform.agent.decision_tree_conversations.action.view}
+      </a>
+     </td>
+    </tr>
+    </#list>
+   </tbody>
+  </table>
+</div>
+
+<#if paginator?? && (paginator.pagesCount > 1)>
+<nav class="mt-4">
+ <ul class="pagination justify-content-center">
+  <li class="page-item<#if (paginator.pageCurrent == 1)> disabled</#if>">
+   <a class="page-link" href="${paginator.firstPageLink}"><i class="ti ti-chevrons-left"></i></a>
+  </li>
+  <li class="page-item<#if (paginator.pageCurrent == 1)> disabled</#if>">
+   <a class="page-link" href="${paginator.previousPageLink}"><i class="ti ti-chevron-left"></i></a>
+  </li>
+  <#list paginator.pagesLinks as page>
+  <li class="page-item<#if page.index == paginator.pageCurrent> active</#if>">
+   <a class="page-link" href="${page.url}">${page.name}</a>
+  </li>
+  </#list>
+  <li class="page-item<#if (paginator.pageCurrent == paginator.pagesCount)> disabled</#if>">
+   <a class="page-link" href="${paginator.nextPageLink}"><i class="ti ti-chevron-right"></i></a>
+  </li>
+  <li class="page-item<#if (paginator.pageCurrent == paginator.pagesCount)> disabled</#if>">
+   <a class="page-link" href="${paginator.lastPageLink}"><i class="ti ti-chevrons-right"></i></a>
+  </li>
+ </ul>
+</nav>
+</#if>
+</#if>

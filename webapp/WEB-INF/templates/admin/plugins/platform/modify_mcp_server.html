@@ -1,0 +1,80 @@
+<@pageContainer>
+    <@pageColumn>
+        <@pageHeader title='#i18n{platform.agent.modify_mcp_server.pageTitle} - ${mcp_server.name}'>
+        </@pageHeader>
+
+        <@messages infos=infos warnings=warnings errors=errors />
+
+        <@tform method='post' name='modify_mcp_server' action='jsp/admin/plugins/platform/ManageAgentMcpServers.jsp' boxed=true>
+            <@input type='hidden' name='action' value='modifyMcpServer' />
+            <@input type='hidden' name='mcp_server_id' value='${mcp_server.id}' />
+
+            <@row>
+                <@columns xs=12 md=6>
+                    <@formGroup labelFor='mcp_server_name' labelKey='#i18n{platform.agent.model.entity.mcpServer.attribute.name}' mandatory=true>
+                        <@input type='text' name='mcp_server_name' id='mcp_server_name' value='${mcp_server.name!}' />
+                    </@formGroup>
+                </@columns>
+
+                <@columns xs=12 md=6>
+                    <@formGroup labelFor='mcp_server_description' labelKey='#i18n{platform.agent.model.entity.mcpServer.attribute.description}'>
+                        <@input type='text' name='mcp_server_description' id='mcp_server_description' value='${mcp_server.description!}' />
+                    </@formGroup>
+                </@columns>
+
+                <@columns xs=12 md=6>
+                    <@formGroup labelFor='transport_type' labelKey='#i18n{platform.agent.model.entity.mcpServer.attribute.transportType}' mandatory=true>
+                        <@select name='transport_type' id='transport_type'>
+                            <option value="streamable_http" <#if mcp_server.transportType == "streamable_http">selected</#if>>#i18n{platform.agent.mcpServer.transport.streamable_http}</option>
+                            <option value="sse" <#if mcp_server.transportType == "sse">selected</#if>>#i18n{platform.agent.mcpServer.transport.sse}</option>
+                            <option value="websocket" <#if mcp_server.transportType == "websocket">selected</#if>>#i18n{platform.agent.mcpServer.transport.websocket}</option>
+                        </@select>
+                    </@formGroup>
+                </@columns>
+
+                <@columns xs=12 md=6>
+                    <@formGroup labelFor='url' labelKey='#i18n{platform.agent.model.entity.mcpServer.attribute.url}' mandatory=true>
+                        <@input type='text' name='url' id='url' value='${mcp_server.url!}' />
+                    </@formGroup>
+                </@columns>
+
+                <@columns xs=12>
+                    <@formGroup labelFor='headers_json' labelKey='#i18n{platform.agent.model.entity.mcpServer.attribute.headersJson}' helpKey='#i18n{platform.agent.create_mcp_server.headersJsonHelp}'>
+                        <textarea class="form-control" name='headers_json' id='headers_json' rows="3" placeholder='{"Authorization":"Bearer xxx"}'>${mcp_server.headersJson!}</textarea>
+                    </@formGroup>
+                </@columns>
+
+                <@columns xs=12 md=4>
+                    <@formGroup labelFor='timeout_ms' labelKey='#i18n{platform.agent.model.entity.mcpServer.attribute.timeoutMs}'>
+                        <input type='number' class="form-control" name='timeout_ms' id='timeout_ms' value='${mcp_server.timeoutMs}' min='1000' step='1000' />
+                    </@formGroup>
+                </@columns>
+
+                <@columns xs=12 md=8>
+                    <@formGroup labelFor='tool_filter' labelKey='#i18n{platform.agent.model.entity.mcpServer.attribute.toolFilter}' helpKey='#i18n{platform.agent.create_mcp_server.toolFilterHelp}'>
+                        <@input type='text' name='tool_filter' id='tool_filter' value='${mcp_server.toolFilter!}' />
+                    </@formGroup>
+                </@columns>
+
+                <@columns xs=12 md=6>
+                    <@formGroup>
+                        <@checkBox name='enabled' id='enabled' checked=mcp_server.enabled labelFor='enabled' labelKey='#i18n{platform.agent.model.entity.mcpServer.attribute.enabled}' />
+                    </@formGroup>
+                </@columns>
+
+                <@columns xs=12 md=6>
+                    <@formGroup>
+                        <@checkBox name='log_requests' id='log_requests' checked=mcp_server.logRequests labelFor='log_requests' labelKey='#i18n{platform.agent.model.entity.mcpServer.attribute.logRequests}' />
+                    </@formGroup>
+                </@columns>
+
+                <@columns xs=12>
+                    <@formGroup>
+                        <@button type='submit' name='action_modifyMcpServer' buttonIcon='check' title='#i18n{platform.agent.modify_mcp_server.buttonModify}' size='' />
+                        <@aButton href='jsp/admin/plugins/platform/ManageAgentMcpServers.jsp?view=manageMcpServers' buttonIcon='x' title='#i18n{portal.util.labelCancel}' color='secondary' size='' />
+                    </@formGroup>
+                </@columns>
+            </@row>
+        </@tform>
+    </@pageColumn>
+</@pageContainer>

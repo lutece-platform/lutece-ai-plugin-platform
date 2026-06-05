@@ -1,0 +1,79 @@
+<#ftl output_format="HTML">
+
+<#-- Header -->
+<div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4">
+ <div>
+ <a href="jsp/site/Portal.jsp?page=platform&view=viewClient&id=${client_id!}" class="small text-secondary text-decoration-none d-flex align-items-center gap-1 mb-2">
+ <i class="ti ti-arrow-left"></i>#i18n{platform.xpage.action.back}
+ </a>
+ <h1 class="fw-bold mb-1">#i18n{platform.agent.create_vision.pageTitle}</h1>
+ <p class="text-secondary mb-0">#i18n{platform.agent.xpage.createVision.subtitle}</p>
+ </div>
+</div>
+
+ <#if (infos!)?has_content><#list (infos![]) as info><div class="alert alert-info">${info!}</div></#list></#if>
+ <#if (errors!)?has_content><#list (errors![]) as error><div class="alert alert-danger">${error.message!}</div></#list></#if>
+
+ <form method="post" action="jsp/site/Portal.jsp">
+ <input type="hidden" name="page" value="agent_vision">
+ <input type="hidden" name="action" value="doCreateVision">
+ <input type="hidden" name="client_id" value="${client_id!}">
+
+ <div class="row g-3">
+
+ <#-- ===== Left column ===== -->
+ <div class="col-lg-8">
+ <div class="card">
+ <div class="card-body">
+ <h5 class="fw-bold mb-3"><i class="ti ti-settings me-2"></i>#i18n{platform.agent.vision.section.generalConfiguration}</h5>
+ <div class="row g-3">
+ <div class="col-12">
+ <label for="vision_title" class="form-label">#i18n{platform.agent.model.entity.vision.attribute.visionTitle} *</label>
+ <input type="text" class="form-control" id="vision_title" name="vision_title" placeholder="#i18n{platform.agent.vision.placeholder.visionTitle}" required>
+ <div class="form-text">#i18n{platform.agent.vision.help.visionTitle}</div>
+ </div>
+ <div class="col-12">
+ <label for="vision_description" class="form-label">#i18n{platform.agent.model.entity.vision.attribute.visionDescription}</label>
+ <textarea class="form-control" id="vision_description" name="vision_description" rows="3" placeholder="#i18n{platform.agent.vision.placeholder.visionDescription}"></textarea>
+ <div class="form-text">#i18n{platform.agent.vision.help.visionDescription}</div>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+
+ <#-- ===== Right column ===== -->
+ <div class="col-lg-4">
+
+ <#-- Provider Configuration -->
+ <div class="card mb-3">
+ <div class="card-body">
+ <h5 class="fw-bold mb-3"><i class="ti ti-brain me-2"></i>#i18n{platform.agent.vision.section.providerConfiguration}</h5>
+ <div class="mb-3">
+ <label for="provider_id" class="form-label">#i18n{platform.agent.model.entity.vision.attribute.providerId} *</label>
+ <select class="form-select" data-mu-toggle="select" id="provider_id" name="provider_id" required>
+ <#if vision_providers?? && vision_providers?size gt 0>
+ <#list vision_providers as provider>
+ <option value="${provider.id}">${provider.providerName!}</option>
+ </#list>
+ <#else>
+ <option value="">#i18n{platform.agent.vision.noProviders}</option>
+ </#if>
+ </select>
+ <div class="form-text">#i18n{platform.agent.vision.help.provider}</div>
+ </div>
+ </div>
+ </div>
+
+ </div>
+ </div>
+
+ <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+ <a href="jsp/site/Portal.jsp?page=platform&view=viewClient&id=${client_id!}" class="btn btn-light">
+ #i18n{platform.agent.xpage.action.cancel}
+ </a>
+ <button type="submit" class="btn btn-primary">
+ <i class="ti ti-device-floppy me-1"></i>#i18n{platform.agent.create_vision.buttonLabel}
+ </button>
+ </div>
+ </form>
